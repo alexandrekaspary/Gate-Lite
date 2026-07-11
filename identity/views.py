@@ -20,7 +20,7 @@ from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
 from django.db import transaction
 from django.db.models import Q
-from django.http import JsonResponse, HttpResponseBadRequest
+from django.http import Http404, JsonResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.urls import reverse_lazy
@@ -588,6 +588,40 @@ def rotate_key(request):
     with transaction.atomic():
         SigningKey.objects.select_for_update().filter(active=True).update(active=False,retired_at=timezone.now()); kid,private,jwk=generate_key(); SigningKey.objects.create(kid=kid,encrypted_private_key=private,public_jwk=jwk)
     audit(request,"signing_key.rotated",metadata={"kid":kid}); messages.success(request,"Nova chave de assinatura ativada."); return redirect("console:keys")
+
+# Documentação embutida do console: páginas Markdown versionadas em docs/console/.
+DOCS_PAGES = {
+    "index": ("Visão geral", "O sistema, os conceitos e o mapa da documentação"),
+    "primeiros-passos": ("Primeiros passos", "A ordem recomendada para configurar um ambiente novo"),
+    "usuarios": ("Usuários", "Criação, campos, permissões e comportamentos automáticos"),
+    "grupos": ("Grupos", "Acessos compartilhados, herança e boas práticas"),
+    "clients": ("Clients", "Aplicações OIDC: tipos, fluxos, URLs, scopes e secrets"),
+    "roles": ("Roles", "Autorizações por client, composição e atribuições"),
+    "configuracoes": ("Configurações", "Cada item da política de segurança, tokens e chaves"),
+    "integracao": ("Integração OIDC", "Endpoints, exemplos de código e validação de JWT"),
+}
+
+@login_required
+def docs_page(request, slug="index"):
+    if not has_any_console_permission(request.user): raise PermissionDenied
+    if slug not in DOCS_PAGES: raise Http404
+    import re as re_module
+    import markdown as markdown_module
+    source = (settings.BASE_DIR / "docs" / "console" / f"{slug}.md").read_text(encoding="utf-8")
+    html = markdown_module.markdown(
+        source,
+        extensions=["extra", "codehilite"],
+        extension_configs={"codehilite": {"css_class": "codehilite", "guess_lang": False}},
+    )
+    # Links internos entre páginas ("clients", "roles"…) viram URLs do console.
+    html = re_module.sub(
+        r'href="([a-z-]+)"',
+        lambda m: f'href="{reverse("console:docs-page", args=[m.group(1)])}"' if m.group(1) in DOCS_PAGES else m.group(0),
+        html,
+    )
+    title, description = DOCS_PAGES[slug]
+    pages = [{"slug": s, "title": t, "description": d, "active": s == slug} for s, (t, d) in DOCS_PAGES.items()]
+    return render(request, "console/docs.html", {"content": html, "doc_title": title, "doc_description": description, "pages": pages})
 
 @login_required
 def settings_panel(request):

@@ -3,6 +3,12 @@
 Todas as mudanças relevantes deste projeto são documentadas neste arquivo.
 O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o versionamento segue [SemVer](https://semver.org/lang/pt-BR/).
 
+## [Não lançado]
+
+### Adicionado
+
+- Seção **Documentação** no console: páginas Markdown versionadas em `docs/console/` com visão geral do sistema, primeiros passos e tutoriais completos de usuários, grupos, clients, roles, configurações e integração OIDC.
+
 ## [1.0.0] - 2026-07-11
 
 Primeira versão estável do GateLite: provedor de identidade e SSO OpenID Connect com console administrativo próprio.

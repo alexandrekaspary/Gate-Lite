@@ -1,5 +1,7 @@
 Django==5.2.16
 PyJWT[crypto]==2.13.0
 qrcode==8.2
+Markdown==3.10.2
+Pygments==2.20.0
 psycopg[binary]==3.2.13
 gunicorn==26.0.0

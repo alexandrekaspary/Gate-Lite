@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ doc_title }} · Documentação · GateLite{% endblock %}
+{% block heading %}Documentação{% endblock %}
+{% block subtitle %}<p>{{ doc_description }}</p>{% endblock %}
+
+{% block content %}
+<div class="settings-layout docs-layout">
+  <aside class="settings-sidebar">
+    <nav class="settings-nav" aria-label="Páginas da documentação">
+      <p class="nav-label">Guia</p>
+      {% for page in pages %}
+      <a href="{% url 'console:docs-page' page.slug %}" {% if page.active %}class="is-active" aria-current="page"{% endif %} title="{{ page.description }}">
+        <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 19.5A2.5 2.5 0 0 0 6.5 22H20V2H6.5A2.5 2.5 0 0 0 4 4.5v15Z"/></svg>{{ page.title }}
+      </a>
+      {% endfor %}
+    </nav>
+    <div class="settings-help">
+      <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 1 1 5.83 1c0 2-3 2-3 4M12 18h.01"/></svg>
+      <strong>Documentação embutida</strong>
+      <p>Estas páginas são versionadas junto com o código, em <code>docs/console/</code>.</p>
+    </div>
+  </aside>
+
+  <section class="panel doc-panel">
+    <article class="doc-content">{{ content|safe }}</article>
+  </section>
+</div>
+{% endblock %}

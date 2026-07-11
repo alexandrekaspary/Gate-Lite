@@ -583,3 +583,43 @@ class PolicyAndRouteContractTests(TestCase):
                     f"{reverse('login')}?next={url}",
                     fetch_redirect_response=False,
                 )
+
+
+class ConsoleDocsTests(TestCase):
+    def setUp(self):
+        self.operator = User.objects.create_user("docs-operator", password=PASSWORD)
+        self.operator.user_permissions.add(permission("view_identity_console"))
+
+    def test_every_documentation_page_renders_with_navigation_and_rewritten_links(self):
+        from .views import DOCS_PAGES
+
+        self.client.force_login(self.operator)
+
+        index = self.client.get(reverse("console:docs"))
+        self.assertEqual(index.status_code, 200)
+        self.assertTemplateUsed(index, "console/docs.html")
+        self.assertContains(index, "Visão geral do GateLite")
+        # Links internos do Markdown reescritos para URLs do console.
+        self.assertContains(index, reverse("console:docs-page", args=["clients"]))
+
+        for slug in DOCS_PAGES:
+            with self.subTest(slug=slug):
+                response = self.client.get(reverse("console:docs-page", args=[slug]))
+                self.assertEqual(response.status_code, 200)
+                self.assertContains(response, 'class="doc-content"')
+                self.assertContains(response, 'aria-current="page"')
+
+        self.assertEqual(
+            self.client.get(reverse("console:docs-page", args=["nao-existe"])).status_code,
+            404,
+        )
+
+    def test_documentation_requires_a_console_permission(self):
+        outsider = User.objects.create_user("docs-outsider", password=PASSWORD)
+        self.client.force_login(outsider)
+        self.assertEqual(self.client.get(reverse("console:docs")).status_code, 403)
+
+        self.client.force_login(self.operator)
+        page = self.client.get(reverse("console:docs"))
+        self.assertEqual(page.status_code, 200)
+        self.assertContains(page, "Documentação")

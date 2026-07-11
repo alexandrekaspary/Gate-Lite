@@ -296,6 +296,46 @@
 .settings-nav a { display: flex; align-items: center; gap: 9px; padding: 9px; border-left: 2px solid transparent; border-radius: 2px; color: var(--muted); font-size: 12px; font-weight: 550; text-decoration: none; }
 .settings-nav a svg { width: 16px; height: 16px; }
 .settings-nav a:hover { border-left-color: var(--gray-900); color: var(--gray-900); background: var(--gray-100); }
+.settings-nav a.is-active { border-left-color: var(--gray-950); color: var(--gray-950); background: var(--gray-100); font-weight: 650; }
+
+/* Embedded documentation */
+.doc-panel { padding: 28px 32px; }
+.doc-content { color: var(--ink-soft); font-size: 13.5px; line-height: 1.65; }
+.doc-content h1 { margin: 0 0 14px; font-size: 22px; color: var(--ink); }
+.doc-content h2 { margin: 28px 0 12px; padding-top: 18px; border-top: 1px solid var(--line); font-size: 16px; color: var(--ink); }
+.doc-content h3 { margin: 20px 0 8px; font-size: 14px; color: var(--ink); }
+.doc-content p { margin: 0 0 11px; }
+.doc-content ul, .doc-content ol { margin: 0 0 11px; padding-left: 22px; }
+.doc-content li { margin: 3px 0; }
+.doc-content a { color: var(--gray-950); font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
+.doc-content a:hover { background: var(--gray-100); }
+.doc-content code { padding: 1px 5px; border: 1px solid var(--line); border-radius: 2px; background: var(--surface-subtle); font-size: 12px; }
+.doc-content blockquote { margin: 0 0 13px; padding: 9px 14px; border-left: 3px solid var(--gray-400); background: var(--surface-subtle); }
+.doc-content hr { margin: 20px 0; border: 0; border-top: 1px solid var(--line); }
+
+/* Docs: tables as clean row lists instead of full grids */
+.doc-content table { width: 100%; margin: 6px 0 20px; border: 1px solid var(--line); border-collapse: collapse; font-size: 13px; }
+.doc-content th, .doc-content td { padding: 10px 14px; text-align: left; vertical-align: top; }
+.doc-content th { border-bottom: 2px solid var(--line-strong); background: var(--surface-subtle); color: var(--ink); font-size: 12px; font-weight: 700; letter-spacing: .015em; }
+.doc-content td { border-bottom: 1px solid var(--line); }
+.doc-content tbody tr:nth-child(even) { background: var(--gray-25); }
+.doc-content tbody tr:hover { background: var(--gray-50); }
+.doc-content td:first-child { color: var(--ink); font-weight: 600; white-space: normal; }
+
+/* Docs: code blocks with syntax highlighting (Pygments/codehilite), light theme */
+.doc-content pre { margin: 0; padding: 15px 18px; overflow-x: auto; }
+.doc-content .codehilite, .doc-content > pre { margin: 6px 0 18px; border: 1px solid var(--line-strong); border-radius: var(--radius-sm); background: var(--surface-subtle); }
+.doc-content pre code { padding: 0; border: 0; background: transparent; color: var(--gray-900); font-size: 12.5px; line-height: 1.7; }
+.codehilite .c, .codehilite .c1, .codehilite .cm, .codehilite .ch, .codehilite .cs { color: #6a737d; font-style: italic; }
+.codehilite .k, .codehilite .kc, .codehilite .kd, .codehilite .kn, .codehilite .kp, .codehilite .kr, .codehilite .kt, .codehilite .ow { color: #24548f; }
+.codehilite .s, .codehilite .s1, .codehilite .s2, .codehilite .sa, .codehilite .sb, .codehilite .sc, .codehilite .sd, .codehilite .se, .codehilite .si, .codehilite .sx, .codehilite .sr { color: #2f6b3c; }
+.codehilite .m, .codehilite .mf, .codehilite .mi, .codehilite .mh, .codehilite .mo { color: #8a4a12; }
+.codehilite .nf, .codehilite .fm, .codehilite .nd { color: #5e3f9e; }
+.codehilite .nb, .codehilite .bp, .codehilite .nc, .codehilite .nn { color: #1a6b7a; }
+.codehilite .o, .codehilite .p { color: var(--gray-700); }
+.codehilite .nt { color: #24548f; }
+.codehilite .na { color: #1a6b7a; }
+.codehilite .err { color: var(--gray-900); border: 0; background: transparent; }
 .settings-help { padding: 14px; border: 1px solid var(--gray-300); border-radius: var(--radius); color: var(--gray-700); background: var(--gray-50); }
 .settings-help > svg { width: 18px; height: 18px; margin-bottom: 7px; }
 .settings-help strong { display: block; font-size: 12px; }
@@ -381,6 +421,8 @@
   .settings-nav .nav-label { display: none; }
   .settings-nav a { min-width: max-content; border-left: 0; border-bottom: 2px solid transparent; }
   .settings-nav a:hover { border-bottom-color: var(--gray-900); }
+  .settings-nav a.is-active { border-bottom-color: var(--gray-950); }
+  .doc-panel { padding: 20px; }
   .settings-help { display: none; }
 }
 

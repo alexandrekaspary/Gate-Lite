@@ -48,6 +48,7 @@ O modelo lembra o Keycloak, mas usa um único domínio de identidade: não exist
 - Chaves RSA privadas cifradas no banco; nenhum arquivo de chave privada.
 - Rotação de client secrets e de chaves de assinatura.
 - Console administrativo responsivo em escala de cinza.
+- Documentação embutida no console, com tutoriais de usuários, grupos, clients, roles e configurações (páginas Markdown em [docs/console/](docs/console/)).
 - Auditoria de autenticação e operações administrativas.
 - Políticas configuráveis de senha, tokens e sessão SSO.
 
@@ -595,10 +596,10 @@ GateLite não pretende reproduzir todos os módulos do Keycloak. O projeto não 
 A suíte está dividida em:
 
 - [identity/tests.py](identity/tests.py): 45 testes de protocolo, segurança, roles, tokens, RBAC, 2FA, logout OIDC, retenção de chaves e lockout de login;
-- [identity/tests_ui.py](identity/tests_ui.py): 19 testes de interface, formulários, labels, rotas e regressões de alinhamento.
+- [identity/tests_ui.py](identity/tests_ui.py): 21 testes de interface, formulários, labels, rotas, documentação embutida e regressões de alinhamento.
 - [identity/tests_account.py](identity/tests_account.py): 21 testes de perfil, confirmação de e-mail, recuperação, políticas persistidas, marca e controles.
 
-Total atual: **85 testes automatizados**.
+Total atual: **87 testes automatizados**.
 
 Os testes sempre rodam em SQLite, mesmo quando `DB_ENGINE=postgres` está definido no ambiente.
 
@@ -621,7 +622,7 @@ O workflow [.github/workflows/tests.yml](.github/workflows/tests.yml) executa au
 - Python 3.12 e 3.13;
 - `manage.py check`;
 - detecção de migrations esquecidas;
-- todos os 85 testes Django.
+- todos os 87 testes Django.
 
 A cobertura comportamental inclui PKCE, clients públicos/confidenciais, Basic/Post, audiences, roles diretas e por grupos, roles compostas, service accounts, CORS, refresh replay, revogação, Introspection, JWT/JWKS, RBAC, políticas, login, MFA, recovery codes, lockout, templates, labels, filtros, paginação e métodos HTTP.
 
