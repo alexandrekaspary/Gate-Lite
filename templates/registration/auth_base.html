@@ -1,0 +1,43 @@
+{% load static %}
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="theme-color" content="#0a0a0a">
+  <title>{% block title %}Acesso · GateLite{% endblock %}</title>
+  <link rel="icon" type="image/svg+xml" href="{% static 'img/favicon.svg' %}">
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+</head>
+<body class="login-page">
+  <a class="skip-link" href="#auth-content">Ir para o conteúdo</a>
+  <main class="login-shell">
+    <section class="login-brand-panel" aria-label="GateLite Identity Platform">
+      <a class="brand login-logo" href="/" aria-label="GateLite — início"><img class="brand-mark" src="{% static 'img/gatelite-mark.svg' %}" alt="" width="36" height="36"><span class="brand-copy"><strong>GateLite</strong><small>Identity Platform</small></span></a>
+      <div class="login-pitch">
+        <span class="login-shield"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="M8 12h8M12 8v8"/></svg></span>
+        <p class="eyebrow light">{% block brand_eyebrow %}Recuperação protegida{% endblock %}</p>
+        <h1>{% block brand_heading %}Recupere o acesso com segurança.{% endblock %}</h1>
+        <p>{% block brand_intro %}O GateLite valida sua identidade por e-mail antes de permitir a definição de uma nova senha.{% endblock %}</p>
+      </div>
+      <div class="login-features" aria-label="Proteções da recuperação de senha">
+        {% block brand_features %}
+        <span><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Link individual e temporário</span>
+        <span><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Nenhuma senha enviada por e-mail</span>
+        <span><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Resposta que preserva sua privacidade</span>
+        {% endblock %}
+      </div>
+      <small class="login-footer">GateLite · Identidade protegida</small>
+    </section>
+
+    <section class="login-form-panel" id="auth-content" tabindex="-1">
+      <div class="login-card">
+        <div class="mobile-login-logo"><img class="brand-mark" src="{% static 'img/gatelite-mark.svg' %}" alt="" width="34" height="34"><strong>GateLite</strong></div>
+        {% block content %}{% endblock %}
+      </div>
+    </section>
+  </main>
+  <script src="{% static 'js/app.js' %}"></script>
+</body>
+</html>

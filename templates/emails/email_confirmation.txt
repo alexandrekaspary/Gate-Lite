@@ -1,0 +1,10 @@
+Olá, {{ user.get_full_name|default:user.get_username }}.
+
+Você solicitou o uso de {{ target_email }} como e-mail da sua conta {{ site_name }}.
+
+Confirme que este endereço pertence a você acessando o link abaixo:
+{{ confirmation_url }}
+
+O link expira em {{ expires_hours }} horas. Se você não solicitou esta alteração, ignore esta mensagem; o endereço atual continuará associado à conta.
+
+{{ site_name }} · Identity Platform

@@ -1,0 +1,60 @@
+{% extends 'account/base.html' %}
+
+{% block title %}Configurar autenticação em duas etapas · GateLite{% endblock %}
+{% block content %}
+<section class="account-hero compact">
+  <div><p class="eyebrow">Segurança</p><h1>Configurar autenticação em duas etapas</h1><p>Conecte seu aplicativo autenticador e confirme um código temporário.</p></div>
+</section>
+
+<div class="mfa-layout">
+  <section class="panel mfa-panel">
+    {% if recovery_codes %}
+    <div class="account-card-heading">
+      <span class="section-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span>
+      <div><p class="eyebrow">Configuração concluída</p><h2>Salve seus códigos de recuperação</h2><p>Estes códigos não serão exibidos novamente.</p></div>
+    </div>
+    <div class="info-callout"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg><p>Armazene os códigos em um gerenciador de senhas ou outro local seguro. Cada código pode ser usado uma única vez.</p></div>
+    <ul class="recovery-codes" aria-label="Códigos de recuperação">
+      {% for code in recovery_codes %}<li>{{ code }}</li>{% endfor %}
+    </ul>
+    <div class="form-actions"><a class="btn primary" href="{% url 'account-mfa' %}">Concluir</a></div>
+    {% else %}
+    <div class="account-card-heading">
+      <span class="section-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="M9 12h6M12 9v6"/></svg></span>
+      <div><p class="eyebrow">TOTP</p><h2>Leia o QR code</h2><p>Use um aplicativo compatível com códigos temporários.</p></div>
+    </div>
+
+    <div class="mfa-setup-grid">
+      <div class="qr-card">
+        {% if qr_data_uri %}<img src="{{ qr_data_uri }}" alt="QR code para configurar o aplicativo autenticador" width="190" height="190">{% else %}<div class="qr-placeholder">QR code indisponível</div>{% endif %}
+        <small>O QR code contém a chave da sua conta. Não o compartilhe.</small>
+      </div>
+      <div>
+        <ol class="setup-instructions">
+          <li>Abra o aplicativo autenticador e escolha adicionar uma conta.</li>
+          <li>Leia o QR code. Se necessário, informe manualmente a chave abaixo.</li>
+          <li>Digite o código de seis dígitos gerado pelo aplicativo.</li>
+        </ol>
+        {% if secret %}<div class="mfa-secret" id="mfa-secret">{{ secret }}</div><button class="copy-button" type="button" data-copy-target="#mfa-secret"><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="1"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><span>Copiar chave</span></button>{% endif %}
+      </div>
+    </div>
+
+    {% if form.non_field_errors %}<div class="form-error-summary" role="alert">{% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}</div>{% endif %}
+    <form method="post" class="form-stack">
+      {% csrf_token %}
+      <div class="field-wrapper {% if form.code.errors %}has-error{% endif %}">
+        <label for="{{ form.code.id_for_label }}">{{ form.code.label }}</label>
+        {{ form.code }}
+        {% if form.code.help_text %}<small class="field-help">{{ form.code.help_text }}</small>{% endif %}
+        {% for error in form.code.errors %}<span class="field-error" role="alert">{{ error }}</span>{% endfor %}
+      </div>
+      <div class="form-actions"><a class="btn ghost" href="{% url 'account-mfa' %}">Cancelar</a><button class="btn primary" type="submit">Ativar e continuar</button></div>
+    </form>
+    {% endif %}
+  </section>
+
+  <aside class="mfa-aside">
+    <section class="aside-card"><span class="aside-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></svg></span><h2>Configuração segura</h2><ul><li>Faça a configuração em um dispositivo confiável.</li><li>Não envie a chave ou o QR code para outras pessoas.</li><li>Finalize salvando os códigos de recuperação.</li></ul></section>
+  </aside>
+</div>
+{% endblock %}

@@ -1,0 +1,143 @@
+{% extends 'base.html' %}
+
+{% block title %}Configurações · GateLite{% endblock %}
+{% block heading %}Configurações{% endblock %}
+{% block subtitle %}<p>Defina as políticas globais de segurança e os parâmetros dos tokens.</p>{% endblock %}
+
+{% block content %}
+<div class="settings-layout">
+  <aside class="settings-sidebar">
+    <nav class="settings-nav" aria-label="Seções de configurações">
+      <p class="nav-label">Políticas</p>
+      <a href="#password"><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="10" rx="1"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Política de senha</a>
+      <a href="#mfa"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="M9 12h6M12 9v6"/></svg>Autenticação em duas etapas</a>
+      <a href="#tokens"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20 12v8H4v-8M2 7h20v5H2zM12 22V7M7 7c-1.5 0-3-1-3-2.5S5.5 2 7 2c2 0 5 5 5 5s3-5 5-5c1.5 0 3 1 3 2.5S18.5 7 17 7"/></svg>Tokens, sessões e secrets</a>
+      <p class="nav-label">Recursos</p>
+      <a href="#access"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/></svg>Acessos e chaves</a>
+    </nav>
+    <div class="settings-help">
+      <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 1 1 5.83 1c0 2-3 2-3 4M12 18h.01"/></svg>
+      <strong>Configuração global</strong>
+      <p>As alterações afetam todo o ambiente e os tokens emitidos a partir do próximo login.</p>
+    </div>
+  </aside>
+
+  <form method="post" class="settings-content">
+    {% csrf_token %}
+    {% if form.non_field_errors %}<div class="form-error-summary" role="alert">{% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}</div>{% endif %}
+
+    <section class="panel settings-section" id="password">
+      <div class="settings-section-header">
+        <span class="section-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="10" rx="1"/><path d="M7 11V7a5 5 0 0 1 10 0v4M12 15v2"/></svg></span>
+        <div><p class="eyebrow">Autenticação</p><h2>Política de senha</h2><p>Requisitos aplicados na criação e na alteração de senhas.</p></div>
+      </div>
+
+      <div class="settings-grid">
+        {% for field in form %}{% if 'password_' in field.name %}
+        <div class="setting-field {% if field.field.widget.input_type == 'checkbox' %}setting-toggle{% endif %} {% if field.errors %}has-error{% endif %}">
+          {% if field.field.widget.input_type == 'checkbox' %}
+          <span class="control-label-spacer" aria-hidden="true"></span>
+          <label class="switch-control" for="{{ field.id_for_label }}">
+            <span><strong>{{ field.label }}</strong>{% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}</span>
+            {{ field }}<i aria-hidden="true"></i>
+          </label>
+          {% else %}
+          <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+          <div class="input-with-suffix">{{ field }}{% if 'length' in field.name %}<span>caracteres</span>{% endif %}</div>
+          {% if field.help_text %}<small class="field-help">{{ field.help_text }}</small>{% endif %}
+          {% endif %}
+          {% for error in field.errors %}<span class="field-error" role="alert">{{ error }}</span>{% endfor %}
+        </div>
+        {% endif %}{% endfor %}
+      </div>
+
+      <div class="policy-preview" aria-label="Resumo da política de senha">
+        <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>
+        <p><strong>Política aplicada automaticamente</strong><span>Novas senhas são validadas no cadastro do usuário e no autosserviço.</span></p>
+      </div>
+    </section>
+
+    <section class="panel settings-section" id="mfa">
+      <div class="settings-section-header">
+        <span class="section-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="M9 12h6M12 9v6"/></svg></span>
+        <div><p class="eyebrow">Autenticação</p><h2>Autenticação em duas etapas</h2><p>Defina para quem o TOTP é opcional ou obrigatório em novos logins.</p></div>
+      </div>
+      <div class="settings-grid">
+        <div class="setting-field {% if form.mfa_mode.errors %}has-error{% endif %}">
+          <label for="{{ form.mfa_mode.id_for_label }}">{{ form.mfa_mode.label }}</label>
+          {{ form.mfa_mode }}
+          {% if form.mfa_mode.help_text %}<small class="field-help">{{ form.mfa_mode.help_text }}</small>{% endif %}
+          {% for error in form.mfa_mode.errors %}<span class="field-error" role="alert">{{ error }}</span>{% endfor %}
+        </div>
+      </div>
+      <div class="info-callout">
+        <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+        <p><strong>Clients podem exigir MFA individualmente.</strong> Quando habilitado no client, o requisito é aplicado mesmo que a política global seja opcional.</p>
+      </div>
+    </section>
+
+    <section class="panel settings-section" id="tokens">
+      <div class="settings-section-header">
+        <span class="section-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2M4 4l2 2M20 4l-2 2"/></svg></span>
+        <div><p class="eyebrow">OpenID Connect</p><h2>Tokens, sessões e client secrets</h2><p>Defina por quanto tempo cada credencial permanece válida e a janela segura de rotação.</p></div>
+      </div>
+
+      <div class="token-grid">
+        {% for field in form %}{% if 'token' in field.name or 'code_ttl' in field.name or 'session' in field.name or 'secret_grace' in field.name %}
+        <div class="token-field {% if field.field.widget.input_type == 'checkbox' %}setting-toggle{% endif %} {% if field.errors %}has-error{% endif %}">
+          {% if field.field.widget.input_type == 'checkbox' %}
+          <span class="control-label-spacer" aria-hidden="true"></span>
+          <label class="switch-control" for="{{ field.id_for_label }}"><span><strong>{{ field.label }}</strong><small>{{ field.help_text }}</small></span>{{ field }}<i aria-hidden="true"></i></label>
+          {% else %}
+          <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+          <div class="input-with-suffix">{{ field }}<span>segundos</span></div>
+          {% if field.help_text %}<small class="field-help">{{ field.help_text }}</small>{% endif %}
+          {% endif %}
+          {% for error in field.errors %}<span class="field-error" role="alert">{{ error }}</span>{% endfor %}
+        </div>
+        {% endif %}{% endfor %}
+      </div>
+
+      <div class="info-callout">
+        <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+        <p><strong>Alterações não revogam tokens existentes.</strong> Os novos valores entram em vigor apenas nas próximas emissões e renovações.</p>
+      </div>
+    </section>
+
+    <section class="panel settings-section" id="access">
+      <div class="settings-section-header">
+        <span class="section-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/></svg></span>
+        <div><p class="eyebrow">Administração</p><h2>Acessos e criptografia</h2><p>Gerencie autorizações internas, roles de aplicações e material de assinatura.</p></div>
+      </div>
+      <div class="resource-grid">
+        {% if perms.identity.manage_permissions %}
+        <a href="{% url 'console:list' 'permissions' %}">
+          <span class="resource-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20 7h-9M14 17H5M17 3v8M8 13v8"/></svg></span>
+          <span><strong>Permissões administrativas</strong><small>Controle de acesso ao console</small></span>
+          <svg class="chevron" aria-hidden="true" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+        </a>
+        {% endif %}
+        {% if perms.identity.manage_clients %}
+        <a href="{% url 'console:list' 'roles' %}">
+          <span class="resource-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></svg></span>
+          <span><strong>Roles dos clients</strong><small>Autorizações emitidas no JWT</small></span>
+          <svg class="chevron" aria-hidden="true" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+        </a>
+        {% endif %}
+        {% if perms.identity.manage_keys %}
+        <a href="{% url 'console:keys' %}">
+          <span class="resource-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m21 2-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.78 7.78 5.5 5.5 0 0 1 7.78-7.78Zm0 0L15.5 7.5m0 0 3 3L22 7l-3-3"/></svg></span>
+          <span><strong>Chaves e JWKS</strong><small>Assinatura e rotação de chaves</small></span>
+          <svg class="chevron" aria-hidden="true" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+        </a>
+        {% endif %}
+      </div>
+    </section>
+
+    <div class="settings-savebar">
+      <div><strong>Configuração global</strong><small>Revise os valores antes de salvar.</small></div>
+      <button class="btn primary" type="submit"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Salvar configurações</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

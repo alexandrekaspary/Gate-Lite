@@ -1,0 +1,52 @@
+{% extends 'account/base.html' %}
+
+{% block content %}
+<section class="account-hero">
+  <div>
+    <p class="eyebrow">Autosserviço</p>
+    <h1>Olá, {% if request.user.first_name %}{{ request.user.first_name }}{% else %}{{ request.user.username }}{% endif %}</h1>
+    <p>Consulte seus acessos e mantenha sua conta protegida.</p>
+  </div>
+  <span class="hero-avatar">{{ request.user.username|slice:':1'|upper }}</span>
+</section>
+
+<div class="account-grid">
+  <section class="panel profile-card">
+    <div class="account-card-heading"><span class="section-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20 21a8 8 0 0 0-16 0M12 13a5 5 0 1 0 0-10 5 5 0 0 0 0 10Z"/></svg></span><div><p class="eyebrow">Identidade</p><h2>Dados do perfil</h2></div></div>
+    <dl class="profile-details">
+      <div><dt>Usuário</dt><dd>{{ request.user.username }}</dd></div>
+      <div><dt>Nome completo</dt><dd>{{ request.user.get_full_name|default:'Não informado' }}</dd></div>
+      <div><dt>E-mail</dt><dd><span>{{ request.user.email|default:'Não informado' }}</span>{% if email_state.pending_email %}<small class="inline-email-state is-pending"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Alteração pendente</small>{% elif email_state.is_current_email_verified %}<small class="inline-email-state"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Confirmado</small>{% else %}<small class="inline-email-state"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 17h.01"/></svg>Não confirmado</small>{% endif %}</dd></div>
+      <div><dt>Status da conta</dt><dd><span class="badge success"><i></i>Ativa</span></dd></div>
+    </dl>
+    <div class="profile-card-actions"><a class="btn" href="{% url 'account-profile-edit' %}"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z"/></svg>Editar dados</a></div>
+  </section>
+
+  <section class="panel security-card">
+    <div class="account-card-heading"><span class="section-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></svg></span><div><p class="eyebrow">Segurança</p><h2>Proteção da conta</h2></div></div>
+    <p>Gerencie sua senha e adicione uma segunda etapa de verificação ao login.</p>
+    <div class="security-status"><span><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span><div><strong>Senha configurada</strong><small>Sua senha segue a política da organização.</small></div></div>
+    <div class="security-actions">
+      <a class="btn primary" href="{% url 'change-own-password' %}"><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="10" rx="1"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Alterar senha</a>
+      <a class="btn" href="{% url 'account-mfa' %}"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="M12 8v4M12 16h.01"/></svg>Autenticação em duas etapas</a>
+    </div>
+  </section>
+
+  <section class="panel access-card full">
+    <div class="account-card-heading"><span class="section-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM23 21v-2a4 4 0 0 0-4-4h-1"/></svg></span><div><p class="eyebrow">Acessos</p><h2>Grupos vinculados</h2><p>Seus grupos determinam os acessos e as roles herdadas nas aplicações.</p></div></div>
+    <div class="group-list">
+      {% for group in request.user.groups.all %}
+      <div class="group-chip"><span><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H4a4 4 0 0 0-4 4M8 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8"/></svg></span><strong>{{ group.name }}</strong></div>
+      {% empty %}
+      <div class="account-empty"><span><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H4a4 4 0 0 0-4 4M8 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8"/></svg></span><div><strong>Nenhum grupo vinculado</strong><p>Entre em contato com um administrador se precisar de acesso a uma aplicação.</p></div></div>
+      {% endfor %}
+    </div>
+  </section>
+  <section class="panel access-card full">
+    <div class="account-card-heading"><span class="section-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 4h16v12H4zM8 20h8M12 16v4"/></svg></span><div><p class="eyebrow">Segurança</p><h2>Sessões de aplicações</h2><p>Encerre acessos OIDC que você não reconhece.</p></div></div>
+    <div class="session-list">
+      {% for session in oidc_sessions %}<div class="session-row"><div><strong>{{ session.client.name }}</strong><small>Audience: {{ session.audience.name }} · iniciada em {{ session.auth_time|date:'d/m/Y H:i' }}</small></div><form method="post" action="{% url 'revoke-own-session' session.pk %}">{% csrf_token %}<button class="btn ghost" type="submit">Encerrar</button></form></div>{% empty %}<div class="account-empty"><div><strong>Nenhuma sessão OIDC ativa</strong><p>Novos logins em aplicações aparecerão aqui.</p></div></div>{% endfor %}
+    </div>
+  </section>
+</div>
+{% endblock %}

@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+
+{% block title %}Visão geral · GateLite{% endblock %}
+{% block heading %}Visão geral{% endblock %}
+{% block subtitle %}<p>Gerencie identidades, acessos e integrações OIDC em um só lugar.</p>{% endblock %}
+{% block actions %}
+{% if perms.identity.manage_clients %}
+<a class="btn primary" href="{% url 'console:create' 'clients' %}">
+  <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+  Criar client
+</a>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<section class="stats" aria-label="Resumo da plataforma">
+  <a class="stat-card" {% if perms.identity.manage_users %}href="{% url 'console:list' 'users' %}"{% else %}aria-disabled="true" tabindex="-1"{% endif %}>
+    <span class="stat-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM22 21v-2a4 4 0 0 0-3-3.87"/></svg></span>
+    <span class="stat-content"><small>Usuários</small><strong>{{ users }}</strong><span>Identidades cadastradas</span></span>
+    <svg class="stat-arrow" aria-hidden="true" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+  </a>
+  <a class="stat-card" {% if perms.identity.manage_groups %}href="{% url 'console:list' 'groups' %}"{% else %}aria-disabled="true" tabindex="-1"{% endif %}>
+    <span class="stat-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM23 21v-2a4 4 0 0 0-4-4h-1"/></svg></span>
+    <span class="stat-content"><small>Grupos</small><strong>{{ groups }}</strong><span>Conjuntos de acesso</span></span>
+    <svg class="stat-arrow" aria-hidden="true" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+  </a>
+  <a class="stat-card" {% if perms.identity.manage_clients %}href="{% url 'console:list' 'clients' %}"{% else %}aria-disabled="true" tabindex="-1"{% endif %}>
+    <span class="stat-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M7 2h10a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2ZM9 6h6M9 10h6"/></svg></span>
+    <span class="stat-content"><small>Clients OIDC</small><strong>{{ clients }}</strong><span>Aplicações integradas</span></span>
+    <svg class="stat-arrow" aria-hidden="true" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+  </a>
+  <a class="stat-card" {% if perms.identity.manage_keys %}href="{% url 'console:keys' %}"{% else %}aria-disabled="true" tabindex="-1"{% endif %}>
+    <span class="stat-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m21 2-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.78 7.78 5.5 5.5 0 0 1 7.78-7.78Zm0 0L15.5 7.5m0 0 3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg></span>
+    <span class="stat-content"><small>Chaves</small><strong>{{ keys }}</strong><span>Assinaturas disponíveis</span></span>
+    <svg class="stat-arrow" aria-hidden="true" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+  </a>
+</section>
+
+<div class="dashboard-grid">
+  <section class="panel discovery-panel">
+    <div class="panel-heading">
+      <div>
+        <span class="section-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 0 20M12 2a15.3 15.3 0 0 0 0 20"/></svg></span>
+        <div><p class="eyebrow">OpenID Connect</p><h2>Endpoint de descoberta</h2></div>
+      </div>
+      <span class="status-dot"><i></i>Disponível</span>
+    </div>
+    <p class="muted">Use esta URL para configurar bibliotecas OIDC. Os endpoints, algoritmos e recursos suportados são descobertos automaticamente.</p>
+    <div class="code-field">
+      <code id="discovery-url">{{ request.scheme }}://{{ request.get_host }}/.well-known/openid-configuration</code>
+      <button class="copy-button" type="button" data-copy-target="#discovery-url" aria-label="Copiar endpoint de descoberta">
+        <svg aria-hidden="true" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="1"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><span>Copiar</span>
+      </button>
+    </div>
+    <div class="protocol-meta">
+      <span><strong>RS256</strong> Assinatura JWT</span>
+      <span><strong>PKCE</strong> Clients públicos</span>
+      <span><strong>JWKS</strong> Rotação de chaves</span>
+    </div>
+  </section>
+
+  <aside class="panel quick-panel">
+    <div class="panel-heading compact">
+      <div><div><p class="eyebrow">Atalhos</p><h2>Ações rápidas</h2></div></div>
+    </div>
+    <nav class="quick-links" aria-label="Ações rápidas">
+      {% if perms.identity.manage_users %}
+      <a href="{% url 'console:create' 'users' %}"><span class="quick-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M15 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M8 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM19 8v6M16 11h6"/></svg></span><span><strong>Novo usuário</strong><small>Cadastre uma identidade</small></span><svg class="chevron" aria-hidden="true" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></a>
+      {% endif %}
+      {% if perms.identity.manage_groups %}
+      <a href="{% url 'console:create' 'groups' %}"><span class="quick-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H4a4 4 0 0 0-4 4M8 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM19 8v6M16 11h6"/></svg></span><span><strong>Novo grupo</strong><small>Organize membros e roles</small></span><svg class="chevron" aria-hidden="true" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></a>
+      {% endif %}
+      {% if perms.identity.manage_clients %}
+      <a href="{% url 'console:create' 'clients' %}"><span class="quick-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M7 2h10a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2ZM12 8v6M9 11h6"/></svg></span><span><strong>Novo client</strong><small>Integre uma aplicação</small></span><svg class="chevron" aria-hidden="true" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></a>
+      {% endif %}
+    </nav>
+  </aside>
+</div>
+
+<section class="panel getting-started">
+  <div class="panel-heading compact">
+    <div><div><p class="eyebrow">Primeiros passos</p><h2>Prepare uma integração segura</h2></div></div>
+  </div>
+  <ol class="setup-steps">
+    <li><span>1</span><div><strong>Crie o client</strong><p>Defina o tipo da aplicação, as URLs autorizadas e os scopes necessários.</p></div></li>
+    <li><span>2</span><div><strong>Modele o acesso</strong><p>Crie roles exclusivas do client e vincule-as a grupos ou usuários.</p></div></li>
+    <li><span>3</span><div><strong>Valide os tokens</strong><p>Confira assinatura, issuer, audience, expiração e as roles presentes no JWT.</p></div></li>
+  </ol>
+</section>
+{% endblock %}
