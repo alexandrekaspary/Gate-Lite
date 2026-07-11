@@ -34,10 +34,16 @@
     <section class="login-form-panel" id="auth-content" tabindex="-1">
       <div class="login-card">
         <div class="mobile-login-logo"><img class="brand-mark" src="{% static 'img/gatelite-mark.svg' %}" alt="" width="34" height="34"><strong>GateLite</strong></div>
+        {% if messages %}
+        <div class="message-stack" aria-live="polite">
+          {% for message in messages %}<div class="alert {{ message.tags|default:'info' }}" role="status"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg><span>{{ message }}</span><button class="alert-close" type="button" aria-label="Fechar aviso">×</button></div>{% endfor %}
+        </div>
+        {% endif %}
         {% block content %}{% endblock %}
       </div>
     </section>
   </main>
   <script src="{% static 'js/app.js' %}"></script>
+  {% block scripts %}{% endblock %}
 </body>
 </html>

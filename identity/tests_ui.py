@@ -37,10 +37,12 @@ from .models import (
     SecurityPolicy,
     SigningKey,
     UserMFA,
+    UserSecurityState,
 )
 
 
 PASSWORD = "Strong-password-123!"
+NEW_PASSWORD = "Different-strong-password-456!"
 TOTP_SECRET = base64.b32encode(b"12345678901234567890").decode().rstrip("=")
 
 
@@ -101,8 +103,45 @@ class FormWidgetContractTests(TestCase):
                         )
 
         self.assertTrue(UserCreateForm().fields["basic_access"].disabled)
+        self.assertIn("must_change_password", UserCreateForm().fields)
+        self.assertTrue(UserCreateForm().fields["must_change_password"].initial)
         self.assertIsInstance(ClientForm().fields["require_mfa"].widget, forms.CheckboxInput)
         self.assertIsInstance(UserEditForm(instance=user).fields["reset_mfa"].widget, forms.CheckboxInput)
+        self.assertIn("new_password_confirmation", UserEditForm(instance=user).fields)
+        self.assertIn("must_change_password", UserEditForm(instance=user).fields)
+
+    def test_user_edit_requires_password_confirmation_and_persists_the_required_change(self):
+        user = User.objects.create_user("password-managed", email="managed@example.com", password=PASSWORD)
+        base_data = {
+            "username": user.username,
+            "first_name": "",
+            "last_name": "",
+            "email": user.email,
+            "is_active": "on",
+        }
+        mismatch = UserEditForm({**base_data, "new_password": NEW_PASSWORD, "new_password_confirmation": "different"}, instance=user)
+        self.assertFalse(mismatch.is_valid())
+        self.assertIn("new_password_confirmation", mismatch.errors)
+
+        form = UserEditForm({**base_data, "new_password": NEW_PASSWORD, "new_password_confirmation": NEW_PASSWORD, "must_change_password": "on"}, instance=user)
+        self.assertTrue(form.is_valid(), form.errors)
+        form.save()
+        user.refresh_from_db()
+        self.assertTrue(user.check_password(NEW_PASSWORD))
+        self.assertTrue(user.security_state.must_change_password)
+
+    def test_user_creation_can_require_a_password_change_on_first_login(self):
+        form = UserCreateForm({
+            "username": "created-with-temporary-password",
+            "email": "",
+            "password1": NEW_PASSWORD,
+            "password2": NEW_PASSWORD,
+            "must_change_password": "on",
+            "is_active": "on",
+        })
+        self.assertTrue(form.is_valid(), form.errors)
+        user = form.save()
+        self.assertTrue(UserSecurityState.objects.get(user=user).must_change_password)
 
     def test_one_time_code_widgets_publish_mobile_and_autocomplete_hints(self):
         user = User.objects.create_user("mfa-form-user", password=PASSWORD)
@@ -199,6 +238,44 @@ class LoginTemplateContractTests(TestCase):
         self.assertRedirects(expired, reverse("login"))
         self.assertContains(expired, "A verificação expirou. Entre novamente.")
         self.assertContains(expired, 'class="message-stack"')
+
+
+class ForcedPasswordChangeTests(TestCase):
+    def test_initial_migration_creates_a_superuser_with_a_temporary_password(self):
+        admin = User.objects.get(username="admin")
+        self.assertTrue(admin.is_superuser)
+        self.assertTrue(admin.is_staff)
+        self.assertTrue(admin.check_password("123456"))
+        self.assertTrue(admin.security_state.must_change_password)
+
+    def test_login_is_restricted_until_the_user_sets_a_new_password(self):
+        user = User.objects.create_user("password-reset-required", password=PASSWORD)
+        UserSecurityState.objects.filter(user=user).update(must_change_password=True)
+
+        login = self.client.post(reverse("login"), {"username": user.username, "password": PASSWORD})
+        self.assertRedirects(login, reverse("change-own-password"), fetch_redirect_response=False)
+        blocked = self.client.get(reverse("account"))
+        self.assertRedirects(blocked, reverse("change-own-password"), fetch_redirect_response=False)
+        page = self.client.get(reverse("change-own-password"))
+        self.assertTemplateUsed(page, "account/forced_password_change.html")
+        self.assertContains(page, 'class="login-shell"')
+        self.assertNotContains(page, 'class="account-topbar"')
+        self.assertContains(page, "Defina uma nova senha para continuar.")
+        self.assertContains(page, 'name="new_password1"')
+        self.assertContains(page, 'name="new_password2"')
+        self.assertNotContains(page, 'name="old_password"')
+        self.assertContains(page, "Requisitos da senha")
+        self.assertContains(page, "password-policy.js")
+
+        changed = self.client.post(reverse("change-own-password"), {
+            "new_password1": NEW_PASSWORD,
+            "new_password2": NEW_PASSWORD,
+        })
+        self.assertRedirects(changed, reverse("account"), fetch_redirect_response=False)
+        user.refresh_from_db()
+        self.assertTrue(user.check_password(NEW_PASSWORD))
+        self.assertFalse(user.security_state.must_change_password)
+        self.assertEqual(self.client.get(reverse("account")).status_code, 200)
 
 
 class ConsoleTemplateContractTests(TestCase):
@@ -340,6 +417,8 @@ class AccountTemplateAndRouteTests(TestCase):
 
         password = self.client.get(reverse("change-own-password"))
         self.assertTemplateUsed(password, "account/password.html")
+        self.assertContains(password, "Requisitos da senha")
+        self.assertContains(password, "password-policy.js")
         for field in password.context["form"].visible_fields():
             self.assertIn("input", field.field.widget.attrs.get("class", "").split())
             self.assertContains(password, f'for="{field.id_for_label}"')

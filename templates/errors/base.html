@@ -1,0 +1,30 @@
+{% load static %}
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="theme-color" content="#0a0a0a">
+  <title>{% block title %}Erro · GateLite{% endblock %}</title>
+  <link rel="icon" type="image/svg+xml" href="{% static 'img/favicon.svg' %}">
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+</head>
+<body class="error-page">
+  <main class="error-shell" id="main-content" tabindex="-1">
+    <a class="brand error-brand" href="/" aria-label="GateLite — início">
+      <img class="brand-mark" src="{% static 'img/gatelite-mark.svg' %}" alt="" width="36" height="36">
+      <span class="brand-copy"><strong>GateLite</strong><small>Identity Platform</small></span>
+    </a>
+    <section class="error-card" aria-labelledby="error-title">
+      <p class="eyebrow">Erro {% block code %}{% endblock %}</p>
+      <h1 id="error-title">{% block heading %}{% endblock %}</h1>
+      <p class="error-description">{% block description %}{% endblock %}</p>
+      <div class="error-actions">
+        <a class="btn primary" href="/">Ir para o início</a>
+        <a class="btn" href="/login/">Entrar</a>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

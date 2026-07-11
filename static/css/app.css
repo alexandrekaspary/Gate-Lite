@@ -135,6 +135,14 @@ p { margin-bottom: 12px; }
 .brand-copy strong { font-size: 17px; letter-spacing: -.015em; }
 .brand-copy small { margin-top: 3px; color: var(--muted-light); font-size: 9px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
 
+.error-page { display: grid; min-height: 100vh; place-items: center; padding: 24px; background: var(--gray-100); }
+.error-shell { width: min(100%, 580px); }
+.error-brand { margin: 0 0 22px 4px; }
+.error-card { padding: clamp(28px, 7vw, 54px); border: 1px solid var(--line); border-radius: 8px; background: var(--surface); box-shadow: var(--shadow-md); }
+.error-card h1 { max-width: 420px; margin-bottom: 12px; font-size: clamp(28px, 5vw, 42px); }
+.error-description { max-width: 460px; margin: 0; color: var(--ink-soft); font-size: 16px; }
+.error-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 28px; }
+
 .panel, .table-card {
   min-width: 0;
   border: 1px solid var(--line);
@@ -365,7 +373,9 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--gray-900); }
   border-radius: var(--radius-sm);
   color: var(--gray-700);
   background: var(--gray-50);
+  transition: opacity .18s ease, transform .18s ease;
 }
+.alert.is-dismissing { opacity: 0; transform: translateY(-4px); }
 .alert > svg { width: 18px; height: 18px; }
 .alert > span { min-width: 0; flex: 1; overflow-wrap: anywhere; }
 .alert.success { border-left-color: var(--gray-900); color: var(--gray-900); background: var(--gray-0); }
@@ -471,6 +481,16 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--gray-900); }
 .auth-page-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 24px; }
 .login-card .field-help ul { display: grid; gap: 3px; margin: 7px 0 0; padding: 10px 10px 10px 27px; border-radius: var(--radius-sm); background: var(--gray-100); }
 .login-card .info-callout { margin-top: 4px; }
+.login-card .password-policy-card { margin-top: 21px; padding: 15px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--gray-100); }
+.login-card .password-policy-card .aside-icon { display: none; }
+.login-card .password-policy-card h2 { margin: 0 0 8px; font-size: 15px; }
+.login-card .password-policy-list { margin: 0; padding-left: 19px; }
+.login-card .password-policy-list li { margin-top: 4px; color: var(--muted); font-size: 11px; line-height: 1.45; }
+.login-card .password-policy-list li.is-met { color: var(--gray-900); }
+.login-card .password-policy-note, .login-card .password-match-status { margin: 10px 0 0; color: var(--muted); font-size: 11px; }
+.login-card .password-match-status { min-height: 17px; }
+.login-card .password-match-status.is-met { color: var(--gray-900); }
+.login-card .password-match-status.is-unmet { color: var(--gray-700); font-weight: 650; }
 
 .password-toggle {
   position: absolute;

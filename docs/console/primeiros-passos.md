@@ -2,6 +2,12 @@
 
 Este roteiro cobre a configuração de um ambiente novo, na ordem que evita retrabalho.
 
+## Primeiro acesso
+
+Ao aplicar as migrations em um banco novo, o GateLite cria o superusuário `admin` com a senha temporária `123456`. Esse usuário só é criado se o username `admin` ainda não existir.
+
+Entre no console com essa credencial e defina uma nova senha imediatamente: a troca é obrigatória antes de qualquer outro acesso. Em ambientes expostos, aplique a migration apenas em uma janela controlada e nunca mantenha a senha temporária.
+
 ## 1. Ajuste a política de segurança
 
 Abra **Configurações** e revise, nesta ordem:

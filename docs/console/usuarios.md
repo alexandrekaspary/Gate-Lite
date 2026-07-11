@@ -19,6 +19,7 @@ O formulário é dividido em quatro etapas.
 | Campo | O que significa |
 |---|---|
 | **Senha / Confirmação** | Validadas pela [política de senha](configuracoes) vigente. |
+| **Exigir troca de senha no próximo login** | Útil ao definir uma senha temporária: depois de autenticar, o usuário fica restrito à tela de troca de senha até concluir a alteração. |
 | **Ativo** | Desmarque em vez de excluir a conta: um usuário inativo não faz login e tem sessões OIDC e refresh tokens revogados imediatamente. |
 
 ### Etapa 3 — Acessos
@@ -59,7 +60,8 @@ Qualquer permissão administrativa (ou superusuário/staff) também classifica o
 
 Além dos campos de criação, a edição oferece:
 
-- **Nova senha** — deixe em branco para manter a atual. Definir uma senha revoga as outras sessões do usuário.
+- **Nova senha / Confirme a nova senha** — deixe ambas em branco para manter a atual. As duas precisam coincidir e seguem a política de senha. Definir uma senha revoga as outras sessões do usuário.
+- **Exigir troca de senha no próximo login** — restringe o usuário à tela de troca de senha depois que ele se autenticar. A tela pede somente a nova senha e sua confirmação, sem pedir a senha temporária/anterior. Pode ser usado junto de uma senha temporária ou para exigir a renovação da senha atual.
 - **Redefinir 2FA** — remove o autenticador e os recovery codes. Use quando o usuário perdeu o dispositivo; ele configura o TOTP de novo no próximo login (conforme a política).
 - **E-mail** — trocar o endereço aqui deixa a confirmação **pendente**: o endereço só passa a valer como confirmado depois que o dono clicar no link. A claim `email_verified` reflete exatamente isso.
 

@@ -22,7 +22,6 @@ Requisitos: Python 3.12 ou 3.13; SQLite (padrão) ou PostgreSQL (recomendado em 
 python -m venv venv
 venv/bin/pip install -r requirements.txt
 venv/bin/python manage.py migrate
-venv/bin/python manage.py createsuperuser
 venv/bin/python manage.py runserver
 ```
 
@@ -36,7 +35,9 @@ Acesse:
 
 O Django carrega o arquivo `.env` na raiz do projeto e também lê variáveis do ambiente do processo; estas últimas têm precedência. A suíte de testes não carrega esse arquivo. Use [.env.example](.env.example) como referência. Em produção são obrigatórios `DJANGO_SECRET_KEY`, `KEY_ENCRYPTION_SECRET`, `DJANGO_ALLOWED_HOSTS` e `OIDC_ISSUER`, com `DJANGO_DEBUG=0`.
 
-Deixe `EMAIL_HOST` vazio para desativar os envios de e-mail. O `createsuperuser` sugere `admin` como nome de usuário; altere `DJANGO_DEFAULT_SUPERUSER_USERNAME` se necessário.
+Deixe `EMAIL_HOST` vazio para desativar os envios de e-mail.
+
+Na primeira migration, o GateLite cria o superusuário `admin` com a senha temporária `123456`. A troca da senha é obrigatória no primeiro login; não use essa credencial em produção antes de alterá-la.
 
 Gere valores independentes e longos para as duas chaves:
 

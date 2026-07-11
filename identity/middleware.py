@@ -7,6 +7,18 @@ from django.urls import reverse
 from django.utils import timezone
 from urllib.parse import urlencode
 
+class PasswordChangeRequiredMiddleware:
+    def __init__(self,get_response): self.get_response=get_response
+    def __call__(self,request):
+        user=getattr(request,"user",None)
+        exempt=request.path in ("/account/password/","/logout/") or request.path.startswith("/static/")
+        if user and user.is_authenticated and not exempt:
+            from .models import UserSecurityState
+            if UserSecurityState.objects.filter(user=user,must_change_password=True).exists():
+                request.session.setdefault("password_change_next",request.get_full_path())
+                return redirect("change-own-password")
+        return self.get_response(request)
+
 class MFAEnforcementMiddleware:
     def __init__(self,get_response): self.get_response=get_response
     def __call__(self,request):

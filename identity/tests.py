@@ -1744,7 +1744,7 @@ class MFAEnforcementAndAdminResetTests(MFATestMixin, TestCase):
         self.assertEqual(parse_qs(parsed.query), {"next": ["/"]})
 
     def test_console_user_edit_can_reset_another_users_mfa(self):
-        admin = self.make_user("admin", is_staff=True, is_superuser=True)
+        admin = self.make_user("mfa-admin", is_staff=True, is_superuser=True)
         target = self.make_user("target")
         self.enable_mfa_fixture(target, recovery_codes=["ABCD-EFGH-JKLM"])
         security_state = UserSecurityState.objects.get(user=target)

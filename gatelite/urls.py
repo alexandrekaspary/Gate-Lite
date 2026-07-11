@@ -27,3 +27,7 @@ urlpatterns = [
     path("oidc/", include("identity.oidc_urls")),
     path("", include("identity.console_urls")),
 ]
+
+handler403 = "gatelite.errors.permission_denied"
+handler404 = "gatelite.errors.page_not_found"
+handler500 = "gatelite.errors.server_error"

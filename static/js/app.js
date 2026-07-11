@@ -7,11 +7,21 @@
     });
   });
 
-  document.querySelectorAll('.alert-close').forEach((button) => {
-    button.addEventListener('click', () => {
-      const alert = button.closest('.alert');
-      if (alert) alert.remove();
-    });
+  const dismissAlert = (alert) => {
+    if (!alert || alert.classList.contains('is-dismissing')) return;
+    alert.classList.add('is-dismissing');
+    window.setTimeout(() => alert.remove(), 180);
+  };
+
+  document.querySelectorAll('.alert').forEach((alert) => {
+    const timeout = window.setTimeout(() => dismissAlert(alert), 6000);
+    const closeButton = alert.querySelector('.alert-close');
+    if (closeButton) {
+      closeButton.addEventListener('click', () => {
+        window.clearTimeout(timeout);
+        dismissAlert(alert);
+      });
+    }
   });
 
   const writeClipboard = async (value) => {

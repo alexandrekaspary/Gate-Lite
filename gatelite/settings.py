@@ -44,15 +44,15 @@ ALLOWED_HOSTS = [h.strip() for h in os.environ.get("DJANGO_ALLOWED_HOSTS", "loca
 CSRF_TRUSTED_ORIGINS = [v for v in os.environ.get("CSRF_TRUSTED_ORIGINS", "").split(",") if v]
 
 INSTALLED_APPS = [
-    "identity",
     "django.contrib.admin", "django.contrib.auth", "django.contrib.contenttypes",
     "django.contrib.sessions", "django.contrib.messages", "django.contrib.staticfiles",
+    "identity",
 ]
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware", "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware", "django.middleware.csrf.CsrfViewMiddleware",
     "identity.middleware.OIDCCORSMiddleware",
-    "django.contrib.auth.middleware.AuthenticationMiddleware", "identity.middleware.MFAEnforcementMiddleware", "django.contrib.messages.middleware.MessageMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware", "identity.middleware.PasswordChangeRequiredMiddleware", "identity.middleware.MFAEnforcementMiddleware", "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 ROOT_URLCONF = "gatelite.urls"
@@ -146,6 +146,5 @@ if EMAIL_ENABLED and _configured_email_backend == _SMTP_EMAIL_BACKEND and EMAIL_
 EMAIL_TIMEOUT = int(os.environ.get("EMAIL_TIMEOUT") or "10")
 DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "GateLite <no-reply@localhost>")
 SERVER_EMAIL = os.environ.get("SERVER_EMAIL", DEFAULT_FROM_EMAIL)
-DEFAULT_SUPERUSER_USERNAME = os.environ.get("DJANGO_DEFAULT_SUPERUSER_USERNAME", "admin")
 # As validades de confirmação de e-mail e de recuperação de senha são
 # persistidas em SecurityPolicy e editadas no console (Configurações).

@@ -66,14 +66,19 @@ def login_view(request):
         messages.error(request,"Conta temporariamente bloqueada por excesso de tentativas. Tente novamente mais tarde.")
         return render(request,"registration/login.html",{"form":AuthenticationForm(request),"next":request.POST.get("next","")},status=429)
     if request.method=="POST" and form.is_valid():
-        user=form.get_user(); next_url=safe_next(request,request.POST.get("next"))
+        user=form.get_user(); next_url=safe_next(request,request.POST.get("next")); must_change_password=UserSecurityState.objects.filter(user=user,must_change_password=True).exists()
         mfa=UserMFA.objects.filter(user=user,enabled=True).first()
         if mfa:
             if mfa.locked_until and mfa.locked_until>timezone.now():
                 form.add_error(None,"Segundo fator temporariamente bloqueado. Tente novamente mais tarde."); return render(request,"registration/login.html",{"form":form,"next":request.POST.get("next","")},status=429)
+            if must_change_password: request.session["password_change_next"]=next_url; next_url=reverse("change-own-password")
             create_mfa_challenge(request,user,next_url)
             return redirect("login-2fa")
         auth_login(request,user); set_auth_assurance(request,timezone.now(),["pwd"])
+        if must_change_password:
+            request.session["password_change_next"]=next_url
+            messages.info(request,"Defina uma nova senha para continuar.")
+            return redirect("change-own-password")
         policy=SecurityPolicy.load(); required=policy.mfa_mode==SecurityPolicy.MFAMode.ALL or (policy.mfa_mode==SecurityPolicy.MFAMode.ADMINS and is_admin_user(user))
         return redirect(reverse("account-mfa-setup")+"?"+urlencode({"next":next_url})) if required else redirect(next_url)
     return render(request,"registration/login.html",{"form":form,"next":request.POST.get("next") or request.GET.get("next","")})
@@ -96,7 +101,9 @@ def login_2fa(request):
         method=verify_mfa(user,form.cleaned_data["code"])
         if method:
             challenge.consumed_at=timezone.now(); challenge.save(update_fields=["consumed_at"]); request.session.pop("mfa_challenge_id",None)
-            auth_login(request,user); request.session["mfa_verified_user_id"]=user.pk; set_auth_assurance(request,challenge.auth_time,["pwd",method]); audit(request,"mfa.challenge_succeeded",user,{"method":method}); return redirect(challenge.next_url)
+            auth_login(request,user); request.session["mfa_verified_user_id"]=user.pk; set_auth_assurance(request,challenge.auth_time,["pwd",method]); audit(request,"mfa.challenge_succeeded",user,{"method":method})
+            if UserSecurityState.objects.filter(user=user,must_change_password=True).exists(): messages.info(request,"Defina uma nova senha para continuar.")
+            return redirect(challenge.next_url)
         challenge.attempts+=1; challenge.save(update_fields=["attempts"]); record_mfa_failure(user)
         audit(request,"mfa.challenge_failed",user,{"attempt":challenge.attempts})
         if challenge.attempts>=5:
@@ -513,11 +520,21 @@ def revoke_own_session(request,pk):
 def change_own_password(request):
     if not request.user.has_perm("identity.change_own_password"):
         return JsonResponse({"error":"access_denied"}, status=403)
-    form=PasswordChangeForm(request.user, request.POST or None)
+    policy = SecurityPolicy.load()
+    must_change_password = UserSecurityState.objects.filter(user=request.user,must_change_password=True).exists()
+    form = SecureSetPasswordForm(
+        request.user, request.POST or None, keep_session_key=request.session.session_key,
+    ) if must_change_password else PasswordChangeForm(request.user, request.POST or None)
     for field in form.fields.values(): field.widget.attrs["class"]="input"
     if request.method == "POST" and form.is_valid():
-        user=form.save(); update_session_auth_hash(request,user); rotate_security_version(user); messages.success(request,"Senha alterada com sucesso. As outras sessões foram encerradas."); return redirect("account")
-    return render(request,"account/password.html",{"form":form})
+        user=form.save(); update_session_auth_hash(request,user)
+        if not must_change_password:
+            UserSecurityState.objects.filter(user=user,must_change_password=True).update(must_change_password=False)
+            rotate_security_version(user)
+        messages.success(request,"Senha alterada com sucesso. As outras sessões foram encerradas.")
+        return redirect(safe_next(request,request.session.pop("password_change_next",None)))
+    template = "account/forced_password_change.html" if must_change_password else "account/password.html"
+    return render(request,template,{"form":form,"password_policy":policy})
 
 def require_console_permission(request,codename):
     if not (request.user.is_superuser or request.user.has_perm(f"identity.{codename}")): raise PermissionDenied

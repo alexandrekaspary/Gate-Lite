@@ -283,6 +283,7 @@ class UserMFA(models.Model):
 class UserSecurityState(models.Model):
     user=models.OneToOneField(User,on_delete=models.CASCADE,related_name="security_state")
     authentication_version=models.UUIDField(default=uuid.uuid4)
+    must_change_password=models.BooleanField(default=False)
     failed_login_attempts=models.PositiveSmallIntegerField(default=0)
     login_locked_until=models.DateTimeField(null=True,blank=True)
     updated_at=models.DateTimeField(auto_now=True)

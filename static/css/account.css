@@ -74,6 +74,17 @@
 .password-tips ul, .mfa-aside ul { margin: 10px 0 0; padding-left: 18px; }
 .password-tips li, .mfa-aside li { color: var(--muted); font-size: 11px; line-height: 1.55; }
 .password-tips li + li, .mfa-aside li + li { margin-top: 6px; }
+.password-policy-card { background: var(--gray-50) !important; box-shadow: none !important; }
+.password-policy-list { list-style: none; padding-left: 0 !important; }
+.password-policy-list li { position: relative; padding-left: 21px; }
+.password-policy-list li::before { content: "•"; position: absolute; left: 5px; color: var(--gray-400); font-weight: 800; }
+.password-policy-list li.is-met { color: var(--gray-900); }
+.password-policy-list li.is-met::before { content: "✓"; color: var(--gray-900); }
+.password-policy-list li.is-unmet { color: var(--gray-700); }
+.password-policy-note, .password-match-status { margin: 13px 0 0; color: var(--muted); font-size: 11px; }
+.password-match-status { min-height: 17px; }
+.password-match-status.is-met { color: var(--gray-900); }
+.password-match-status.is-unmet { color: var(--gray-700); font-weight: 650; }
 
 /* Account profile and e-mail verification */
 .profile-edit-layout { display: grid; grid-template-columns: minmax(0, 720px) minmax(240px, 300px); align-items: start; gap: 18px; }

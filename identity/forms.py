@@ -4,9 +4,11 @@ from urllib.parse import urlsplit
 from django import forms
 from django.contrib.auth.forms import PasswordResetForm, SetPasswordForm, UserCreationForm
 from django.contrib.auth.models import Group, Permission, User
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
 from django.utils import timezone
 from .email_verification import EmailConfirmationError, EmailConfirmationThrottled, email_available_for_user, normalize_email, request_email_confirmation
-from .models import ClientRole, ClientScopeAssignment, ClientURI, ClientWebOrigin, OIDCClient, OIDCScope, SecurityPolicy, UserEmailState
+from .models import ClientRole, ClientScopeAssignment, ClientURI, ClientWebOrigin, OIDCClient, OIDCScope, SecurityPolicy, UserEmailState, UserSecurityState
 
 def grant_basic_permissions(user):
     user.user_permissions.add(*Permission.objects.filter(
@@ -30,13 +32,14 @@ class StyledFormMixin:
 class UserCreateForm(StyledFormMixin, UserCreationForm):
     # password1/password2 adjacentes ocupam a mesma linha do grid de 2 colunas
     # no passo Segurança do wizard.
-    field_order = ("username","first_name","last_name","email","password1","password2","basic_access","groups","client_roles","is_active","is_staff","user_permissions")
+    field_order = ("username","first_name","last_name","email","password1","password2","must_change_password","basic_access","groups","client_roles","is_active","is_staff","user_permissions")
     basic_access = forms.CharField(required=False, disabled=True, initial="Perfil próprio e alteração da própria senha", label="Acesso básico")
     email = forms.EmailField(required=False)
+    must_change_password = forms.BooleanField(required=False, initial=True, label="Exigir troca de senha no próximo login", help_text="Restringe o acesso do usuário até que ele defina uma nova senha.")
     groups = forms.ModelMultipleChoiceField(Group.objects.all(), required=False)
     client_roles = forms.ModelMultipleChoiceField(ClientRole.objects.select_related("client").order_by("client__name","name"), required=False, label="Roles diretas de clients", help_text="Atribua somente exceções; prefira roles herdadas por grupos.")
     user_permissions = forms.ModelMultipleChoiceField(Permission.objects.select_related("content_type").exclude(content_type__app_label="identity", codename__in=("view_own_profile","change_own_password")), required=False, label="Permissões administrativas")
-    class Meta(UserCreationForm.Meta): fields = ("username", "first_name", "last_name", "email", "basic_access", "groups", "client_roles", "is_active", "is_staff", "user_permissions")
+    class Meta(UserCreationForm.Meta): fields = ("username", "first_name", "last_name", "email", "must_change_password", "basic_access", "groups", "client_roles", "is_active", "is_staff", "user_permissions")
     def clean_email(self):
         email=self.cleaned_data.get("email","").strip()
         if email and User.objects.filter(email__iexact=email).exists():
@@ -47,36 +50,72 @@ class UserCreateForm(StyledFormMixin, UserCreationForm):
         if commit:
             grant_basic_permissions(user)
             user.direct_oidc_client_roles.set(self.cleaned_data["client_roles"])
+            state, _ = UserSecurityState.objects.get_or_create(user=user)
+            state.must_change_password = self.cleaned_data["must_change_password"]
+            state.save(update_fields=["must_change_password", "updated_at"])
         return user
 
 class UserEditForm(StyledFormMixin, forms.ModelForm):
     basic_access = forms.CharField(required=False, disabled=True, initial="Perfil próprio e alteração da própria senha", label="Acesso básico")
-    new_password = forms.CharField(required=False, widget=forms.PasswordInput, label="Nova senha", help_text="Deixe em branco para manter a senha atual.")
+    new_password = forms.CharField(required=False, widget=forms.PasswordInput(attrs={"autocomplete": "new-password"}), label="Nova senha", help_text="Deixe em branco para manter a senha atual.")
+    new_password_confirmation = forms.CharField(required=False, widget=forms.PasswordInput(attrs={"autocomplete": "new-password"}), label="Confirme a nova senha")
+    must_change_password = forms.BooleanField(required=False, label="Exigir troca de senha no próximo login", help_text="Restringe o acesso do usuário até que ele defina uma nova senha.")
     user_permissions = forms.ModelMultipleChoiceField(Permission.objects.select_related("content_type").exclude(content_type__app_label="identity", codename__in=("view_own_profile","change_own_password")), required=False, label="Permissões administrativas")
     client_roles = forms.ModelMultipleChoiceField(ClientRole.objects.select_related("client").order_by("client__name","name"), required=False, label="Roles diretas de clients", help_text="Somadas às roles herdadas pelos grupos.")
     reset_mfa = forms.BooleanField(required=False,label="Redefinir 2FA",help_text="Remove o autenticador e códigos de recuperação cadastrados.")
     class Meta:
         model = User
-        fields = ("username", "first_name", "last_name", "email", "new_password", "basic_access", "groups", "client_roles", "is_active", "is_staff", "is_superuser", "user_permissions", "reset_mfa")
+        fields = ("username", "first_name", "last_name", "email", "new_password", "new_password_confirmation", "must_change_password", "basic_access", "groups", "client_roles", "is_active", "is_staff", "is_superuser", "user_permissions", "reset_mfa")
         widgets = {"groups": forms.SelectMultiple(), "user_permissions": forms.SelectMultiple()}
     def __init__(self, *args, **kwargs):
         instance=kwargs.get("instance")
         self._original_email=(instance.email if instance else "") or ""
         super().__init__(*args, **kwargs)
-        if self.instance.pk: self.fields["client_roles"].initial = self.instance.direct_oidc_client_roles.all()
+        if self.instance.pk:
+            self.fields["client_roles"].initial = self.instance.direct_oidc_client_roles.all()
+            state, _ = UserSecurityState.objects.get_or_create(user=self.instance)
+            self.fields["must_change_password"].initial = state.must_change_password
     def clean_email(self):
         email=self.cleaned_data.get("email","").strip()
         if email and not email_available_for_user(email,self.instance):
             raise forms.ValidationError("Este endereço de e-mail já está em uso.")
         return normalize_email(email) if email else ""
+    def clean(self):
+        cleaned_data = super().clean()
+        new_password = cleaned_data.get("new_password")
+        confirmation = cleaned_data.get("new_password_confirmation")
+        if new_password or confirmation:
+            if not new_password:
+                self.add_error("new_password", "Informe a nova senha.")
+            elif not confirmation:
+                self.add_error("new_password_confirmation", "Confirme a nova senha.")
+            elif new_password != confirmation:
+                self.add_error("new_password_confirmation", "As senhas não coincidem.")
+            else:
+                candidate = User(
+                    username=cleaned_data.get("username", self.instance.username),
+                    first_name=cleaned_data.get("first_name", self.instance.first_name),
+                    last_name=cleaned_data.get("last_name", self.instance.last_name),
+                    email=cleaned_data.get("email", self._original_email),
+                )
+                try:
+                    validate_password(new_password, candidate)
+                except ValidationError as exc:
+                    self.add_error("new_password", exc)
+        return cleaned_data
     def save(self, commit=True):
         user = super().save(commit=False)
         requested_email=self.cleaned_data.get("email","")
         user.email=self._original_email if requested_email else ""
-        if self.cleaned_data.get("new_password"):
+        password_changed = bool(self.cleaned_data.get("new_password"))
+        if password_changed:
             user.set_password(self.cleaned_data["new_password"])
         if commit:
             user.save(); self.save_m2m(); grant_basic_permissions(user); user.direct_oidc_client_roles.set(self.cleaned_data["client_roles"])
+            state, _ = UserSecurityState.objects.get_or_create(user=user)
+            was_required = state.must_change_password
+            state.must_change_password = self.cleaned_data["must_change_password"]
+            state.save(update_fields=["must_change_password", "updated_at"])
             if requested_email and requested_email.casefold()!=self._original_email.strip().casefold():
                 request=getattr(self,"request",None)
                 try:
@@ -91,7 +130,7 @@ class UserEditForm(StyledFormMixin, forms.ModelForm):
                     self.email_confirmation_error=str(exc)
                 except Exception:
                     self.email_confirmation_error="Não foi possível enviar a confirmação de e-mail agora."
-            if self.cleaned_data.get("new_password") or self.cleaned_data.get("reset_mfa"):
+            if password_changed or self.cleaned_data.get("reset_mfa") or (state.must_change_password and not was_required):
                 from .mfa import invalidate_web_sessions, rotate_security_version
                 rotate_security_version(user)
                 invalidate_web_sessions(user)
@@ -159,12 +198,17 @@ class VerifiedEmailPasswordResetForm(PasswordResetForm):
 
 
 class SecureSetPasswordForm(SetPasswordForm):
+    def __init__(self, *args, keep_session_key=None, **kwargs):
+        self.keep_session_key = keep_session_key
+        super().__init__(*args, **kwargs)
+
     def save(self, commit=True):
         user=super().save(commit=commit)
         if commit:
             from .mfa import invalidate_web_sessions, rotate_security_version
+            UserSecurityState.objects.filter(user=user,must_change_password=True).update(must_change_password=False)
             rotate_security_version(user)
-            invalidate_web_sessions(user)
+            invalidate_web_sessions(user,self.keep_session_key)
         return user
 
 class GroupForm(StyledFormMixin, forms.ModelForm):
