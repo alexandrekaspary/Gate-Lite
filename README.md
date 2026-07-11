@@ -201,17 +201,11 @@ Com `DB_ENGINE=sqlite` (ou ausente), as variáveis `DB_*` restantes são ignorad
 
 ## Docker
 
-O [Dockerfile](Dockerfile) constrói uma imagem com Gunicorn e executa `collectstatic` durante o build.
+O [Dockerfile](Dockerfile) constrói uma imagem com Gunicorn e executa `collectstatic` durante o build. Na inicialização, o entrypoint aplica as migrations pendentes antes de aceitar tráfego.
 
 ```bash
 docker build -t gatelite .
 docker run --rm -p 8000:8000 --env-file .env gatelite
-```
-
-A imagem não executa migrations automaticamente; rode-as antes de liberar tráfego:
-
-```bash
-docker run --rm --env-file .env gatelite python manage.py migrate
 ```
 
 Observações:
