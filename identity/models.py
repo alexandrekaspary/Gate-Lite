@@ -251,6 +251,53 @@ class SecurityPolicy(models.Model):
         return super().save(*args, **kwargs)
 
 
+class EmailConfiguration(models.Model):
+    """Configuração SMTP única, com senha cifrada no banco."""
+
+    enabled = models.BooleanField(default=False)
+    host = models.CharField(max_length=255, blank=True)
+    port = models.PositiveIntegerField(default=587, validators=[MinValueValidator(1), MaxValueValidator(65535)])
+    username = models.CharField(max_length=255, blank=True)
+    encrypted_password = models.BinaryField(blank=True, editable=False)
+    from_email = models.CharField(max_length=320, blank=True)
+    use_tls = models.BooleanField(default=True)
+    use_ssl = models.BooleanField(default=False)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Configuração de e-mail"
+
+    @classmethod
+    def load(cls):
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
+
+    @property
+    def has_password(self):
+        return bool(self.encrypted_password)
+
+    @property
+    def is_configured(self):
+        return self.enabled and bool(self.host.strip())
+
+    def set_password(self, password):
+        from .crypto import encrypt_value
+        self.encrypted_password = encrypt_value(password.encode(), "smtp-password") if password else b""
+
+    def get_password(self):
+        if not self.encrypted_password:
+            return ""
+        from .crypto import decrypt_value
+        return decrypt_value(self.encrypted_password, "smtp-password").decode()
+
+    def save(self, *args, **kwargs):
+        self.pk = 1
+        self.host = self.host.strip()
+        self.username = self.username.strip()
+        self.from_email = self.from_email.strip()
+        return super().save(*args, **kwargs)
+
+
 class ClientSecret(models.Model):
     client=models.ForeignKey(OIDCClient,on_delete=models.CASCADE,related_name="secrets")
     prefix=models.CharField(max_length=12)

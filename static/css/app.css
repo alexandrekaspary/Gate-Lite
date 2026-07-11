@@ -297,6 +297,12 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--gray-900); }
 .form-error-summary p { margin: 3px 0 0; }
 .form-actions { display: flex; align-items: center; justify-content: flex-end; gap: 9px; }
 
+.confirm-dialog { width: min(420px, calc(100vw - 32px)); padding: 22px; border: 1px solid var(--line-strong); border-radius: var(--radius); color: var(--ink); background: var(--surface); box-shadow: 0 18px 50px rgba(0, 0, 0, .22); }
+.confirm-dialog::backdrop { background: rgba(0, 0, 0, .48); }
+.confirm-dialog h2 { margin-bottom: 6px; font-size: 15px; }
+.confirm-dialog p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.5; }
+.confirm-dialog-actions { display: flex; justify-content: flex-end; gap: 9px; margin-top: 18px; }
+
 .badge {
   display: inline-flex;
   width: max-content;

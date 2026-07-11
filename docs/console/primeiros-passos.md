@@ -15,14 +15,14 @@ Abra **Configurações** e revise, nesta ordem:
 1. **Política de senha** — requisitos aplicados a toda senha nova (cadastro, autosserviço e reset).
 2. **Autenticação em duas etapas** — comece com `Opcional` ou `Obrigatório para administradores`; mude para `Obrigatório para todos` quando os usuários estiverem orientados.
 3. **Tokens, sessões e secrets** — os padrões são seguros; encurte o access token se suas APIs validam apenas o JWT localmente.
-4. **E-mail e recuperação** — validade dos links enviados por e-mail.
+4. **E-mail, SMTP e recuperação de senha** — conexão SMTP e validade dos links enviados por e-mail.
 5. **Proteção contra força bruta** — tentativas e duração do bloqueio de login.
 
 Cada campo está explicado em [Configurações](configuracoes).
 
 ## 2. Confirme o envio de e-mail
 
-Confirmação de endereço e recuperação de senha dependem de SMTP configurado no ambiente (`EMAIL_HOST`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `DEFAULT_FROM_EMAIL`). Em desenvolvimento, o backend padrão imprime as mensagens no terminal do servidor.
+Confirmação de endereço e recuperação de senha dependem de SMTP configurado em **Configurações**. Host, porta, usuário, remetente e TLS são persistidos no banco; a senha SMTP é cifrada com a chave de criptografia da instalação e nunca é exibida depois de salva.
 
 ## 3. Cadastre os clients
 

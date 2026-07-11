@@ -12,7 +12,8 @@ from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils import timezone
 
-from .models import AuditEvent, SecurityPolicy, UserEmailState
+from .models import AuditEvent, EmailConfiguration, SecurityPolicy, UserEmailState
+from .email_backend import email_delivery_enabled
 
 
 class EmailConfirmationError(Exception):
@@ -87,7 +88,7 @@ def _send_confirmation_message(user, target_email, raw_token, request=None):
     message = EmailMultiAlternatives(
         subject=subject,
         body=text_body,
-        from_email=settings.DEFAULT_FROM_EMAIL,
+        from_email=EmailConfiguration.load().from_email or settings.DEFAULT_FROM_EMAIL,
         to=[target_email],
     )
     message.attach_alternative(html_body, "text/html")
@@ -99,7 +100,7 @@ def request_email_confirmation(user, email, request=None, actor=None, ip_address
     target = normalize_email(email)
     if not email_available_for_user(target, user):
         raise EmailAlreadyInUse("Este endereço de e-mail já está em uso.")
-    if not settings.EMAIL_ENABLED:
+    if not email_delivery_enabled():
         return EmailConfirmationRequest(sent=False, pending_email=target)
 
     now = timezone.now()

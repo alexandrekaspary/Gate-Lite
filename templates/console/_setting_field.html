@@ -1,0 +1,18 @@
+{% comment %}
+Campo das telas de configurações: toggle para checkbox, rótulo + input para o restante.
+Parâmetros: field (obrigatório), wrapper (default "setting-field"), suffix (texto após o input).
+{% endcomment %}
+<div class="{{ wrapper|default:'setting-field' }}{% if field.field.widget.input_type == 'checkbox' %} setting-toggle{% endif %}{% if field.errors %} has-error{% endif %}">
+  {% if field.field.widget.input_type == 'checkbox' %}
+  <span class="control-label-spacer" aria-hidden="true"></span>
+  <label class="switch-control" for="{{ field.id_for_label }}">
+    <span><strong>{{ field.label }}</strong>{% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}</span>
+    {{ field }}<i aria-hidden="true"></i>
+  </label>
+  {% else %}
+  <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+  {% if suffix %}<div class="input-with-suffix">{{ field }}<span>{{ suffix }}</span></div>{% else %}{{ field }}{% endif %}
+  {% if field.help_text %}<small class="field-help">{{ field.help_text }}</small>{% endif %}
+  {% endif %}
+  {% for error in field.errors %}<span class="field-error" role="alert">{{ error }}</span>{% endfor %}
+</div>

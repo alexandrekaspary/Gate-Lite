@@ -35,8 +35,6 @@ Acesse:
 
 O Django carrega o arquivo `.env` na raiz do projeto e também lê variáveis do ambiente do processo; estas últimas têm precedência. A suíte de testes não carrega esse arquivo. Use [.env.example](.env.example) como referência. Em produção são obrigatórios `DJANGO_SECRET_KEY`, `KEY_ENCRYPTION_SECRET`, `DJANGO_ALLOWED_HOSTS` e `OIDC_ISSUER`, com `DJANGO_DEBUG=0`.
 
-Deixe `EMAIL_HOST` vazio para desativar os envios de e-mail.
-
 Na primeira migration, o GateLite cria o superusuário `admin` com a senha temporária `123456`. A troca da senha é obrigatória no primeiro login; não use essa credencial em produção antes de alterá-la.
 
 Gere valores independentes e longos para as duas chaves:
@@ -46,6 +44,19 @@ python -c 'import secrets; print(secrets.token_urlsafe(64))'
 ```
 
 Não altere `KEY_ENCRYPTION_SECRET` em um ambiente existente: a troca direta torna ilegíveis as chaves privadas RSA e os secrets TOTP já persistidos.
+
+### E-mail (SMTP)
+
+O SMTP é configurado no Console, em **Configurações → E-mail, SMTP e recuperação de senha** — não no `.env`. Servidor, porta, usuário, remetente e o modo TLS ficam no banco; a senha SMTP é cifrada com `KEY_ENCRYPTION_SECRET` e nunca volta a ser exibida, apenas substituída ou removida. O interruptor **Habilitar envio de e-mails** suspende confirmações e recuperações sem apagar a configuração.
+
+Variáveis de ambiente opcionais relacionadas:
+
+| Variável | Padrão | Efeito |
+|---|---|---|
+| `EMAIL_ENABLED` | `1` | Com `0`, desliga todo envio de e-mail, independentemente da configuração do console. |
+| `EMAIL_TIMEOUT` | `10` | Timeout da conexão SMTP, em segundos. |
+| `DEFAULT_FROM_EMAIL` | `GateLite <no-reply@localhost>` | Remetente usado quando o campo **Remetente padrão** está vazio. |
+| `EMAIL_BACKEND` | backend SMTP do banco | Substitui o mecanismo de envio (útil em testes, ex.: backend de console do Django). |
 
 ## Docker
 

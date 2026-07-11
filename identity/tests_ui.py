@@ -31,6 +31,7 @@ from .forms import (
 from .models import (
     AuditEvent,
     ClientRole,
+    EmailConfiguration,
     OIDCClient,
     OIDCSession,
     RefreshToken,
@@ -531,6 +532,9 @@ class PolicyAndRouteContractTests(TestCase):
         self.assertTemplateUsed(page, "console/settings.html")
         self.assertContains(page, 'id="mfa"')
         self.assertContains(page, 'name="mfa_mode"')
+        self.assertContains(page, 'name="host"')
+        self.assertContains(page, 'name="password"')
+        self.assertContains(page, 'name="email_settings_submitted"')
         self.assertContains(page, 'class="settings-savebar"')
         self.assertContains(
             page,
@@ -558,6 +562,14 @@ class PolicyAndRouteContractTests(TestCase):
                 "password_reset_resend_seconds": 120,
                 "login_max_attempts": 8,
                 "login_lockout_seconds": 600,
+                "email_settings_submitted": "1",
+                "enabled": "on",
+                "host": "smtp.example.com",
+                "port": 587,
+                "username": "mailer",
+                "password": "smtp-secret",
+                "from_email": "GateLite <no-reply@example.com>",
+                "use_tls": "on",
             },
         )
         self.assertRedirects(
@@ -575,9 +587,19 @@ class PolicyAndRouteContractTests(TestCase):
         self.assertEqual(policy.password_reset_resend_seconds, 120)
         self.assertEqual(policy.login_max_attempts, 8)
         self.assertEqual(policy.login_lockout_seconds, 600)
+        email_configuration = EmailConfiguration.load()
+        self.assertTrue(email_configuration.enabled)
+        self.assertEqual(email_configuration.host, "smtp.example.com")
+        self.assertEqual(email_configuration.get_password(), "smtp-secret")
+        self.assertNotIn(b"smtp-secret", bytes(email_configuration.encrypted_password))
         self.assertTrue(
             AuditEvent.objects.filter(
                 actor=operator, action="security_policy.updated"
+            ).exists()
+        )
+        self.assertTrue(
+            AuditEvent.objects.filter(
+                actor=operator, action="email_configuration.updated"
             ).exists()
         )
 

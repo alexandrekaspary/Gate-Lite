@@ -8,7 +8,7 @@ from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 from .email_verification import EmailConfirmationError, EmailConfirmationThrottled, email_available_for_user, normalize_email, request_email_confirmation
-from .models import ClientRole, ClientScopeAssignment, ClientURI, ClientWebOrigin, OIDCClient, OIDCScope, SecurityPolicy, UserEmailState, UserSecurityState
+from .models import ClientRole, ClientScopeAssignment, ClientURI, ClientWebOrigin, EmailConfiguration, OIDCClient, OIDCScope, SecurityPolicy, UserEmailState, UserSecurityState
 
 def grant_basic_permissions(user):
     user.user_permissions.add(*Permission.objects.filter(
@@ -35,11 +35,14 @@ class UserCreateForm(StyledFormMixin, UserCreationForm):
     field_order = ("username","first_name","last_name","email","password1","password2","must_change_password","basic_access","groups","client_roles","is_active","is_staff","user_permissions")
     basic_access = forms.CharField(required=False, disabled=True, initial="Perfil próprio e alteração da própria senha", label="Acesso básico")
     email = forms.EmailField(required=False)
-    must_change_password = forms.BooleanField(required=False, initial=True, label="Exigir troca de senha no próximo login", help_text="Restringe o acesso do usuário até que ele defina uma nova senha.")
+    must_change_password = forms.BooleanField(required=False, initial=True, label="Exigir troca de senha no próximo login", help_text="Acesso restrito até definir uma nova senha.")
     groups = forms.ModelMultipleChoiceField(Group.objects.all(), required=False)
     client_roles = forms.ModelMultipleChoiceField(ClientRole.objects.select_related("client").order_by("client__name","name"), required=False, label="Roles diretas de clients", help_text="Atribua somente exceções; prefira roles herdadas por grupos.")
     user_permissions = forms.ModelMultipleChoiceField(Permission.objects.select_related("content_type").exclude(content_type__app_label="identity", codename__in=("view_own_profile","change_own_password")), required=False, label="Permissões administrativas")
-    class Meta(UserCreationForm.Meta): fields = ("username", "first_name", "last_name", "email", "must_change_password", "basic_access", "groups", "client_roles", "is_active", "is_staff", "user_permissions")
+    class Meta(UserCreationForm.Meta):
+        fields = ("username", "first_name", "last_name", "email", "must_change_password", "basic_access", "groups", "client_roles", "is_active", "is_staff", "user_permissions")
+        # Ajuda curta, em uma linha, no lugar dos textos longos padrão do Django.
+        help_texts = {"is_active": "Desmarque para suspender a conta sem excluí-la.", "is_staff": "Permite acessar o admin interno do Django."}
     def clean_email(self):
         email=self.cleaned_data.get("email","").strip()
         if email and User.objects.filter(email__iexact=email).exists():
@@ -59,14 +62,16 @@ class UserEditForm(StyledFormMixin, forms.ModelForm):
     basic_access = forms.CharField(required=False, disabled=True, initial="Perfil próprio e alteração da própria senha", label="Acesso básico")
     new_password = forms.CharField(required=False, widget=forms.PasswordInput(attrs={"autocomplete": "new-password"}), label="Nova senha", help_text="Deixe em branco para manter a senha atual.")
     new_password_confirmation = forms.CharField(required=False, widget=forms.PasswordInput(attrs={"autocomplete": "new-password"}), label="Confirme a nova senha")
-    must_change_password = forms.BooleanField(required=False, label="Exigir troca de senha no próximo login", help_text="Restringe o acesso do usuário até que ele defina uma nova senha.")
+    must_change_password = forms.BooleanField(required=False, label="Exigir troca de senha no próximo login", help_text="Acesso restrito até definir uma nova senha.")
     user_permissions = forms.ModelMultipleChoiceField(Permission.objects.select_related("content_type").exclude(content_type__app_label="identity", codename__in=("view_own_profile","change_own_password")), required=False, label="Permissões administrativas")
     client_roles = forms.ModelMultipleChoiceField(ClientRole.objects.select_related("client").order_by("client__name","name"), required=False, label="Roles diretas de clients", help_text="Somadas às roles herdadas pelos grupos.")
-    reset_mfa = forms.BooleanField(required=False,label="Redefinir 2FA",help_text="Remove o autenticador e códigos de recuperação cadastrados.")
+    reset_mfa = forms.BooleanField(required=False,label="Redefinir 2FA",help_text="Remove o autenticador e códigos de recuperação.")
     class Meta:
         model = User
         fields = ("username", "first_name", "last_name", "email", "new_password", "new_password_confirmation", "must_change_password", "basic_access", "groups", "client_roles", "is_active", "is_staff", "is_superuser", "user_permissions", "reset_mfa")
         widgets = {"groups": forms.SelectMultiple(), "user_permissions": forms.SelectMultiple()}
+        # Ajuda curta, em uma linha, no lugar dos textos longos padrão do Django.
+        help_texts = {"is_active": "Desmarque para suspender a conta sem excluí-la.", "is_staff": "Permite acessar o admin interno do Django.", "is_superuser": "Concede todas as permissões automaticamente."}
     def __init__(self, *args, **kwargs):
         instance=kwargs.get("instance")
         self._original_email=(instance.email if instance else "") or ""
@@ -298,7 +303,10 @@ class ClientRoleForm(StyledFormMixin, forms.ModelForm):
     users=forms.ModelMultipleChoiceField(User.objects.order_by("username"),required=False,label="Usuários diretos")
     service_clients=forms.ModelMultipleChoiceField(OIDCClient.objects.order_by("name"),required=False,label="Service accounts",help_text="Clients que recebem esta role via Client Credentials.")
     composites=forms.ModelMultipleChoiceField(ClientRole.objects.select_related("client").order_by("client__name","name"),required=False,label="Roles compostas",help_text="Inclui automaticamente as roles selecionadas.")
-    class Meta: model = ClientRole; fields = ("client", "name", "description", "is_default")
+    class Meta:
+        model = ClientRole
+        fields = ("client", "name", "description", "is_default")
+        help_texts = {"is_default": "Concedida por padrão a quem acessa o client."}
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs)
         if self.instance.pk:
@@ -327,6 +335,58 @@ class SecurityPolicyForm(StyledFormMixin, forms.ModelForm):
         model = SecurityPolicy
         fields = ("password_min_length","password_require_uppercase","password_require_lowercase","password_require_number","password_require_special","mfa_mode","access_token_ttl","id_token_ttl","refresh_token_ttl","sso_session_ttl","client_secret_grace_period","email_confirmation_timeout","email_confirmation_resend_seconds","password_reset_timeout","password_reset_resend_seconds","login_max_attempts","login_lockout_seconds")
         labels = {"password_min_length":"Tamanho mínimo","password_require_uppercase":"Exigir letra maiúscula","password_require_lowercase":"Exigir letra minúscula","password_require_number":"Exigir número","password_require_special":"Exigir caractere especial","mfa_mode":"Política de autenticação em dois fatores","access_token_ttl":"Validade do access token","id_token_ttl":"Validade do ID token","refresh_token_ttl":"Validade máxima do refresh token","sso_session_ttl":"Validade da sessão SSO","client_secret_grace_period":"Sobreposição de secrets na rotação","email_confirmation_timeout":"Validade da confirmação de e-mail","email_confirmation_resend_seconds":"Intervalo mínimo de reenvio","password_reset_timeout":"Validade da recuperação de senha","password_reset_resend_seconds":"Intervalo mínimo entre recuperações","login_max_attempts":"Tentativas de senha antes do bloqueio","login_lockout_seconds":"Duração do bloqueio de login"}
+
+
+class EmailConfigurationForm(StyledFormMixin, forms.ModelForm):
+    field_order = ("enabled", "host", "port", "username", "password", "use_tls", "use_ssl", "from_email", "clear_password")
+    password = forms.CharField(required=False, label="Senha SMTP", widget=forms.PasswordInput(attrs={"autocomplete": "new-password"}), help_text="Deixe em branco para manter a senha cifrada já armazenada.")
+    clear_password = forms.BooleanField(required=False, label="Remover senha SMTP armazenada")
+    port = forms.IntegerField(required=False, min_value=1, max_value=65535, label="Porta SMTP")
+
+    class Meta:
+        model = EmailConfiguration
+        fields = ("enabled", "host", "port", "username", "from_email", "use_tls", "use_ssl")
+        labels = {
+            "enabled": "Habilitar envio de e-mails",
+            "host": "Servidor SMTP",
+            "username": "Usuário SMTP",
+            "from_email": "Remetente padrão",
+            "use_tls": "Usar STARTTLS",
+            "use_ssl": "Usar SSL/TLS direto",
+        }
+        help_texts = {
+            "host": "Ex.: smtp.exemplo.com. Deixe vazio para não enviar mensagens.",
+            "username": "Deixe vazio se o servidor não exigir autenticação.",
+            "from_email": "Aceita o formato GateLite <no-reply@exemplo.com>.",
+            "use_tls": "Criptografia negociada; padrão na porta 587.",
+            "use_ssl": "Conexão cifrada direta; comum na porta 465.",
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["port"].initial = self.instance.port or 587
+
+    def clean(self):
+        data = super().clean()
+        data["port"] = data.get("port") or self.instance.port or 587
+        if data.get("use_tls") and data.get("use_ssl"):
+            self.add_error("use_ssl", "STARTTLS e SSL/TLS direto não podem ser usados juntos.")
+        if data.get("enabled") and not (data.get("host") or "").strip():
+            self.add_error("host", "Informe o servidor SMTP para habilitar os envios.")
+        if data.get("password") and data.get("clear_password"):
+            self.add_error("clear_password", "Informe uma nova senha ou remova a senha armazenada, não ambos.")
+        return data
+
+    def save(self, commit=True):
+        config = super().save(commit=False)
+        password = self.cleaned_data.get("password")
+        if password:
+            config.set_password(password)
+        elif self.cleaned_data.get("clear_password"):
+            config.set_password("")
+        if commit:
+            config.save()
+        return config
 
 class MFASetupConfirmForm(StyledFormMixin, forms.Form):
     code=forms.RegexField(r"^\d{6}$",label="Código do aplicativo",widget=forms.TextInput(attrs={"inputmode":"numeric","autocomplete":"one-time-code","maxlength":"6"}))

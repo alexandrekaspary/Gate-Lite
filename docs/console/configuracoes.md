@@ -33,7 +33,24 @@ Independentemente do modo global, um client ou resource server com **Exigir MFA*
 | **Validade da sessão SSO** | Sessão OIDC criada na autorização | Expirada a sessão, novos códigos/refreshes deixam de funcionar e o usuário loga de novo. |
 | **Sobreposição de secrets na rotação** | Janela em que o secret anterior ainda vale após gerar um novo | Dá tempo de atualizar o deploy da aplicação sem downtime. |
 
-## E-mail e recuperação de senha
+## E-mail, SMTP e recuperação de senha
+
+A seção reúne a conexão SMTP do ambiente e a validade dos links enviados por e-mail.
+
+### Servidor SMTP
+
+| Campo | O que controla |
+|---|---|
+| **Habilitar envio de e-mails** | Liga ou desliga as mensagens de confirmação e recuperação, sem apagar a configuração. Com o envio habilitado, o servidor SMTP passa a ser obrigatório. |
+| **Servidor e porta SMTP** | Endereço e porta do provedor. Na maioria dos provedores: 587 com STARTTLS ou 465 com SSL/TLS direto. |
+| **Usuário e senha SMTP** | Credenciais de autenticação; deixe o usuário vazio se o servidor não exigir login. A senha é cifrada no banco com `KEY_ENCRYPTION_SECRET`; depois de salva, só pode ser substituída ou removida, nunca consultada em texto. |
+| **STARTTLS / SSL/TLS direto** | Modo de criptografia da conexão. Ative somente um, conforme a orientação do provedor. |
+| **Remetente padrão** | Endereço que aparece como remetente; aceita o formato `GateLite <no-reply@exemplo.com>`. |
+| **Remover senha SMTP armazenada** | Apaga a senha cifrada. O interruptor só aparece quando há senha salva. |
+
+A variável de ambiente `EMAIL_ENABLED=0` desliga os envios globalmente, independentemente desta tela — útil em ambientes de homologação.
+
+### Validade dos links enviados
 
 | Campo | O que controla |
 |---|---|

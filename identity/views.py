@@ -32,9 +32,10 @@ from django.views.decorators.debug import sensitive_post_parameters
 from django.views.decorators.http import require_http_methods, require_POST
 from .crypto import generate_key
 from .crypto import decrypt_value, encrypt_value
-from .forms import AccountProfileForm, ClientForm, ClientRoleForm, GroupForm, MFAChallengeForm, MFASetupConfirmForm, PasswordAndMFAForm, PermissionForm, SecurityPolicyForm, SecureSetPasswordForm, UserCreateForm, UserEditForm, VerifiedEmailPasswordResetForm
-from .models import AuditEvent, AuthorizationCode, ClientRole, GroupClientRoleAssignment, MFAChallenge, OIDCClient, OIDCScope, OIDCSession, RefreshToken, RevokedAccessToken, SecurityPolicy, ServiceAccountRoleAssignment, SigningKey, UserClientRoleAssignment, UserMFA, UserSecurityState
+from .forms import AccountProfileForm, ClientForm, ClientRoleForm, EmailConfigurationForm, GroupForm, MFAChallengeForm, MFASetupConfirmForm, PasswordAndMFAForm, PermissionForm, SecurityPolicyForm, SecureSetPasswordForm, UserCreateForm, UserEditForm, VerifiedEmailPasswordResetForm
+from .models import AuditEvent, AuthorizationCode, ClientRole, EmailConfiguration, GroupClientRoleAssignment, MFAChallenge, OIDCClient, OIDCScope, OIDCSession, RefreshToken, RevokedAccessToken, SecurityPolicy, ServiceAccountRoleAssignment, SigningKey, UserClientRoleAssignment, UserMFA, UserSecurityState
 from .email_verification import EmailAlreadyInUse, EmailConfirmationThrottled, InvalidEmailConfirmation, consume_confirmation_token, get_email_state, inspect_confirmation_token, mask_email, request_email_confirmation
+from .email_backend import email_delivery_enabled
 from .mfa import enable_mfa, generate_totp_secret, hash_recovery_codes, invalidate_web_sessions, matching_counter, provisioning_uri, qr_data_uri, generate_recovery_codes, record_mfa_failure, rotate_security_version, session_binding, verify_mfa
 from .oidc import active_key, issue_client_credentials_token, issue_tokens, user_claims, verify_pkce
 
@@ -357,7 +358,7 @@ def account_email_resend(request):
     except Exception:
         messages.error(request,"Não foi possível enviar a mensagem. Verifique a configuração de e-mail e tente novamente.")
     else:
-        if settings.EMAIL_ENABLED:
+        if email_delivery_enabled():
             messages.success(request,"Enviamos um novo link de confirmação.")
         else:
             messages.info(request,"O envio de e-mails está desativado; nenhum link foi enviado.")
@@ -434,6 +435,7 @@ class VerifiedPasswordResetView(auth_views.PasswordResetView):
     extra_email_context={"site_name":"GateLite"}
 
     def form_valid(self,form):
+        self.from_email = EmailConfiguration.load().from_email or settings.DEFAULT_FROM_EMAIL
         response=super().form_valid(form)
         AuditEvent.objects.create(
             action="password.reset_requested",target_type="system",
@@ -644,10 +646,17 @@ def docs_page(request, slug="index"):
     return render(request, "console/docs.html", {"content": html, "doc_title": title, "doc_description": description, "pages": pages})
 
 @login_required
+@sensitive_post_parameters("password")
 def settings_panel(request):
     if not (request.user.is_superuser or any(request.user.has_perm(f"identity.{code}") for code in ("manage_security","manage_keys","manage_permissions"))): raise PermissionDenied
     if request.method=="POST": require_console_permission(request,"manage_security")
-    policy=SecurityPolicy.load(); form=SecurityPolicyForm(request.POST or None,instance=policy)
-    if request.method=="POST" and form.is_valid():
-        item=form.save(); audit(request,"security_policy.updated",item); messages.success(request,"Política de segurança atualizada."); return redirect("console:settings")
-    return render(request,"console/settings.html",{"form":form,"keys":SigningKey.objects.all()})
+    policy=SecurityPolicy.load(); email_configuration=EmailConfiguration.load()
+    form=SecurityPolicyForm(request.POST or None,instance=policy)
+    email_form=EmailConfigurationForm(request.POST if request.POST.get("email_settings_submitted") else None,instance=email_configuration)
+    if request.method=="POST" and form.is_valid() and email_form.is_valid():
+        item=form.save()
+        if email_form.is_bound:
+            email_form.save()
+            audit(request,"email_configuration.updated",email_configuration)
+        audit(request,"security_policy.updated",item); messages.success(request,"Configurações atualizadas com sucesso."); return redirect("console:settings")
+    return render(request,"console/settings.html",{"form":form,"email_form":email_form,"email_configuration":email_configuration,"keys":SigningKey.objects.all()})

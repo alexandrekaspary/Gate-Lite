@@ -26,7 +26,9 @@
 
   <form method="post" class="settings-content">
     {% csrf_token %}
+    <input type="hidden" name="email_settings_submitted" value="1">
     {% if form.non_field_errors %}<div class="form-error-summary" role="alert">{% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}</div>{% endif %}
+    {% if email_form.non_field_errors %}<div class="form-error-summary" role="alert">{% for error in email_form.non_field_errors %}<p>{{ error }}</p>{% endfor %}</div>{% endif %}
 
     <section class="panel settings-section" id="password">
       <div class="settings-section-header">
@@ -36,20 +38,7 @@
 
       <div class="settings-grid">
         {% for field in form %}{% if 'password_' in field.name and 'reset' not in field.name %}
-        <div class="setting-field {% if field.field.widget.input_type == 'checkbox' %}setting-toggle{% endif %} {% if field.errors %}has-error{% endif %}">
-          {% if field.field.widget.input_type == 'checkbox' %}
-          <span class="control-label-spacer" aria-hidden="true"></span>
-          <label class="switch-control" for="{{ field.id_for_label }}">
-            <span><strong>{{ field.label }}</strong>{% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}</span>
-            {{ field }}<i aria-hidden="true"></i>
-          </label>
-          {% else %}
-          <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-          <div class="input-with-suffix">{{ field }}{% if 'length' in field.name %}<span>caracteres</span>{% endif %}</div>
-          {% if field.help_text %}<small class="field-help">{{ field.help_text }}</small>{% endif %}
-          {% endif %}
-          {% for error in field.errors %}<span class="field-error" role="alert">{{ error }}</span>{% endfor %}
-        </div>
+        {% if 'length' in field.name %}{% include 'console/_setting_field.html' with field=field suffix='caracteres' only %}{% else %}{% include 'console/_setting_field.html' with field=field only %}{% endif %}
         {% endif %}{% endfor %}
       </div>
 
@@ -86,17 +75,7 @@
 
       <div class="token-grid">
         {% for field in form %}{% if 'token' in field.name or 'code_ttl' in field.name or 'session' in field.name or 'secret_grace' in field.name %}
-        <div class="token-field {% if field.field.widget.input_type == 'checkbox' %}setting-toggle{% endif %} {% if field.errors %}has-error{% endif %}">
-          {% if field.field.widget.input_type == 'checkbox' %}
-          <span class="control-label-spacer" aria-hidden="true"></span>
-          <label class="switch-control" for="{{ field.id_for_label }}"><span><strong>{{ field.label }}</strong><small>{{ field.help_text }}</small></span>{{ field }}<i aria-hidden="true"></i></label>
-          {% else %}
-          <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-          <div class="input-with-suffix">{{ field }}<span>segundos</span></div>
-          {% if field.help_text %}<small class="field-help">{{ field.help_text }}</small>{% endif %}
-          {% endif %}
-          {% for error in field.errors %}<span class="field-error" role="alert">{{ error }}</span>{% endfor %}
-        </div>
+        {% include 'console/_setting_field.html' with field=field wrapper='token-field' suffix='segundos' only %}
         {% endif %}{% endfor %}
       </div>
 
@@ -109,22 +88,34 @@
     <section class="panel settings-section" id="email">
       <div class="settings-section-header">
         <span class="section-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></svg></span>
-        <div><p class="eyebrow">Autosserviço</p><h2>E-mail e recuperação de senha</h2><p>Validade dos links enviados por e-mail e o intervalo mínimo entre reenvios.</p></div>
+        <div><p class="eyebrow">Autosserviço</p><h2>E-mail, SMTP e recuperação de senha</h2><p>Configure o envio SMTP e a validade dos links enviados por e-mail.</p></div>
       </div>
 
+      <h3 class="settings-subheading">Servidor SMTP</h3>
+      <div class="settings-grid">
+        {% include 'console/_setting_field.html' with field=email_form.enabled wrapper='setting-field setting-full' only %}
+        {% include 'console/_setting_field.html' with field=email_form.host only %}
+        {% include 'console/_setting_field.html' with field=email_form.port only %}
+        {% include 'console/_setting_field.html' with field=email_form.username only %}
+        {% include 'console/_setting_field.html' with field=email_form.password only %}
+        {% include 'console/_setting_field.html' with field=email_form.use_tls only %}
+        {% include 'console/_setting_field.html' with field=email_form.use_ssl only %}
+        {% include 'console/_setting_field.html' with field=email_form.from_email wrapper='setting-field setting-full' only %}
+        {% if email_configuration.has_password %}
+        {% include 'console/_setting_field.html' with field=email_form.clear_password wrapper='setting-field setting-full' only %}
+        {% endif %}
+      </div>
+
+      <h3 class="settings-subheading">Validade dos links enviados</h3>
       <div class="token-grid">
         {% for field in form %}{% if field.name == 'email_confirmation_timeout' or field.name == 'email_confirmation_resend_seconds' or field.name == 'password_reset_timeout' or field.name == 'password_reset_resend_seconds' %}
-        <div class="token-field {% if field.errors %}has-error{% endif %}">
-          <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-          <div class="input-with-suffix">{{ field }}<span>segundos</span></div>
-          {% for error in field.errors %}<span class="field-error" role="alert">{{ error }}</span>{% endfor %}
-        </div>
+        {% include 'console/_setting_field.html' with field=field wrapper='token-field' suffix='segundos' only %}
         {% endif %}{% endfor %}
       </div>
 
       <div class="info-callout">
         <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
-        <p><strong>Links já enviados observam os novos valores.</strong> A validade é conferida no momento em que o link é aberto.</p>
+        <p><strong>Senha SMTP {% if email_configuration.has_password %}armazenada de forma cifrada{% else %}ainda não configurada{% endif %}.</strong> Ela nunca é exibida novamente. Links já enviados observam os novos valores de validade.</p>
       </div>
     </section>
 

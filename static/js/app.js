@@ -1,9 +1,52 @@
 (() => {
   'use strict';
 
-  document.querySelectorAll('[data-confirm]').forEach((element) => {
-    element.addEventListener('submit', (event) => {
-      if (!window.confirm(element.dataset.confirm)) event.preventDefault();
+  const supportsDialog = typeof HTMLDialogElement === 'function';
+  let confirmDialog = null;
+  let pendingForm = null;
+
+  const buildConfirmDialog = () => {
+    const dialog = document.createElement('dialog');
+    dialog.className = 'confirm-dialog';
+    dialog.setAttribute('aria-labelledby', 'confirm-dialog-title');
+    dialog.setAttribute('aria-describedby', 'confirm-dialog-message');
+    dialog.innerHTML =
+      '<h2 id="confirm-dialog-title"></h2>' +
+      '<p id="confirm-dialog-message"></p>' +
+      '<div class="confirm-dialog-actions">' +
+      '<button type="button" class="btn" data-dialog-cancel>Cancelar</button>' +
+      '<button type="button" class="btn" data-dialog-confirm></button>' +
+      '</div>';
+    dialog.querySelector('[data-dialog-cancel]').addEventListener('click', () => dialog.close());
+    dialog.querySelector('[data-dialog-confirm]').addEventListener('click', () => {
+      const form = pendingForm;
+      dialog.close();
+      form?.submit();
+    });
+    dialog.addEventListener('click', (event) => {
+      if (event.target === dialog) dialog.close();
+    });
+    dialog.addEventListener('close', () => { pendingForm = null; });
+    document.body.append(dialog);
+    return dialog;
+  };
+
+  document.querySelectorAll('form[data-confirm]').forEach((form) => {
+    form.addEventListener('submit', (event) => {
+      if (!supportsDialog) {
+        if (!window.confirm(form.dataset.confirm)) event.preventDefault();
+        return;
+      }
+      event.preventDefault();
+      confirmDialog = confirmDialog || buildConfirmDialog();
+      pendingForm = form;
+      confirmDialog.querySelector('#confirm-dialog-title').textContent = form.dataset.confirmTitle || 'Confirmar ação';
+      confirmDialog.querySelector('#confirm-dialog-message').textContent = form.dataset.confirm;
+      const confirmButton = confirmDialog.querySelector('[data-dialog-confirm]');
+      confirmButton.textContent = form.dataset.confirmLabel || 'Confirmar';
+      confirmButton.classList.toggle('danger', 'confirmDanger' in form.dataset);
+      confirmButton.classList.toggle('primary', !('confirmDanger' in form.dataset));
+      confirmDialog.showModal();
     });
   });
 
