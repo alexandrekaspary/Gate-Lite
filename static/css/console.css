@@ -127,9 +127,8 @@
 .getting-started { padding-bottom: 20px; }
 .setup-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; margin: 20px 0 0; padding: 0; list-style: none; }
 .setup-steps li { position: relative; display: flex; min-width: 0; gap: 11px; padding-right: 24px; }
-.setup-steps li:not(:last-child)::after { content: ""; position: absolute; z-index: 0; top: 15px; right: 7px; left: 34px; height: 1px; background: var(--line); }
-.setup-steps li > span { position: relative; z-index: 1; display: grid; width: 30px; height: 30px; flex: 0 0 auto; place-items: center; border: 1px solid var(--gray-500); border-radius: 50%; color: var(--gray-900); background: var(--gray-0); font-size: 11px; font-weight: 750; }
-.setup-steps li div { position: relative; z-index: 1; min-width: 0; background: var(--surface); }
+.setup-steps li > span { display: grid; width: 30px; height: 30px; flex: 0 0 auto; place-items: center; border: 1px solid var(--gray-500); border-radius: 50%; color: var(--gray-900); background: var(--gray-0); font-size: 11px; font-weight: 750; }
+.setup-steps li div { min-width: 0; }
 .setup-steps strong { color: var(--ink-soft); font-size: 13px; }
 .setup-steps p { margin: 3px 0 0; color: var(--muted); font-size: 11px; line-height: 1.5; }
 
@@ -396,7 +395,6 @@
   .filterbar .btn { flex: 1; }
   .setup-steps { grid-template-columns: 1fr; gap: 16px; }
   .setup-steps li { padding-right: 0; }
-  .setup-steps li:not(:last-child)::after { top: 30px; right: auto; bottom: -17px; left: 15px; width: 1px; height: auto; }
   .form-fields, .wizard-panel { grid-template-columns: 1fr; }
   .field-wrapper { grid-column: auto !important; }
   .checkbox-field > .control-label-spacer,

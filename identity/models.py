@@ -234,6 +234,9 @@ class SecurityPolicy(models.Model):
     sso_session_ttl = models.PositiveIntegerField(default=28800, help_text="Segundos",validators=[MinValueValidator(300),MaxValueValidator(2592000)])
     client_secret_grace_period = models.PositiveIntegerField(default=300, help_text="Segundos de sobreposição durante rotação",validators=[MaxValueValidator(86400)])
     mfa_mode = models.CharField(max_length=16,choices=MFAMode.choices,default=MFAMode.OPTIONAL)
+    email_confirmation_timeout = models.PositiveIntegerField(default=86400, help_text="Segundos",validators=[MinValueValidator(300),MaxValueValidator(604800)])
+    email_confirmation_resend_seconds = models.PositiveIntegerField(default=60, help_text="Segundos",validators=[MinValueValidator(10),MaxValueValidator(3600)])
+    password_reset_timeout = models.PositiveIntegerField(default=3600, help_text="Segundos",validators=[MinValueValidator(300),MaxValueValidator(604800)])
 
     class Meta: verbose_name = "Política de segurança"
     @classmethod

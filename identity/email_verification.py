@@ -12,7 +12,7 @@ from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils import timezone
 
-from .models import AuditEvent, UserEmailState
+from .models import AuditEvent, SecurityPolicy, UserEmailState
 
 
 class EmailConfirmationError(Exception):
@@ -71,7 +71,7 @@ def _confirmation_url(raw_token, request=None):
 
 
 def _send_confirmation_message(user, target_email, raw_token, request=None):
-    timeout = settings.EMAIL_CONFIRMATION_TIMEOUT
+    timeout = SecurityPolicy.load().email_confirmation_timeout
     context = {
         "user": user,
         "target_email": target_email,
@@ -101,7 +101,8 @@ def request_email_confirmation(user, email, request=None, actor=None, ip_address
         raise EmailAlreadyInUse("Este endereço de e-mail já está em uso.")
 
     now = timezone.now()
-    throttle = settings.EMAIL_CONFIRMATION_RESEND_SECONDS
+    policy = SecurityPolicy.load()
+    throttle = policy.email_confirmation_resend_seconds
     with transaction.atomic():
         state, _ = UserEmailState.objects.select_for_update().get_or_create(user=user)
         if state.confirmation_sent_at and (now - state.confirmation_sent_at).total_seconds() < throttle:
@@ -112,7 +113,7 @@ def request_email_confirmation(user, email, request=None, actor=None, ip_address
         state.pending_email = target
         state.confirmation_token_hash = hashlib.sha256(raw_token.encode()).hexdigest()
         state.confirmation_expires_at = now + timezone.timedelta(
-            seconds=settings.EMAIL_CONFIRMATION_TIMEOUT
+            seconds=policy.email_confirmation_timeout
         )
         state.confirmation_sent_at = now
         state.save(update_fields=[

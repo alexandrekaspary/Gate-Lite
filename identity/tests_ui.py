@@ -465,6 +465,9 @@ class PolicyAndRouteContractTests(TestCase):
                 "refresh_token_ttl": 3600,
                 "sso_session_ttl": 7200,
                 "client_secret_grace_period": 120,
+                "email_confirmation_timeout": 43200,
+                "email_confirmation_resend_seconds": 90,
+                "password_reset_timeout": 1800,
             },
         )
         self.assertRedirects(
@@ -476,6 +479,9 @@ class PolicyAndRouteContractTests(TestCase):
         self.assertEqual(policy.mfa_mode, SecurityPolicy.MFAMode.ALL)
         self.assertEqual(policy.access_token_ttl, 420)
         self.assertEqual(policy.client_secret_grace_period, 120)
+        self.assertEqual(policy.email_confirmation_timeout, 43200)
+        self.assertEqual(policy.email_confirmation_resend_seconds, 90)
+        self.assertEqual(policy.password_reset_timeout, 1800)
         self.assertTrue(
             AuditEvent.objects.filter(
                 actor=operator, action="security_policy.updated"

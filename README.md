@@ -10,6 +10,7 @@ O modelo lembra o Keycloak, mas usa um único domínio de identidade: não exist
 - [Arquitetura](#arquitetura)
 - [Instalação](#instalação)
 - [Configuração](#configuração)
+- [Docker](#docker)
 - [Primeiro acesso](#primeiro-acesso)
 - [Usuários, grupos e roles](#usuários-grupos-e-roles)
 - [Clients OIDC](#clients-oidc)
@@ -109,7 +110,7 @@ As roles efetivas são a união deduplicada das atribuições diretas, das atrib
 ### Requisitos
 
 - Python 3.12 ou 3.13.
-- Um banco suportado pelo Django. O projeto usa SQLite por padrão.
+- SQLite (padrão, desenvolvimento) ou PostgreSQL (recomendado em produção).
 - HTTPS em produção.
 
 ### Ambiente local
@@ -143,18 +144,19 @@ O Django lê variáveis do ambiente do processo. O arquivo [.env.example](.env.e
 | `DJANGO_ALLOWED_HOSTS` | Sim | Hosts separados por vírgula |
 | `CSRF_TRUSTED_ORIGINS` | Conforme implantação | Origens HTTPS separadas por vírgula |
 | `OIDC_ISSUER` | Sim | URL pública e estável do emissor, sem barra final |
-| `EMAIL_BACKEND` | Sim para envio real | Backend do Django; SMTP em produção, console no desenvolvimento |
+| `DB_ENGINE` | Recomendado | `sqlite` (padrão) ou `postgres` |
+| `DB_NAME` | Com Postgres | Nome do banco; padrão `gatelite` |
+| `DB_USER` | Com Postgres | Usuário do banco; padrão `gatelite` |
+| `DB_PASSWORD` | Com Postgres | Senha do usuário do banco |
+| `DB_HOST` | Com Postgres | Host do banco; padrão `localhost` |
+| `DB_PORT` | Com Postgres | Porta do banco; padrão `5432` |
 | `EMAIL_HOST` / `EMAIL_PORT` | Sim para SMTP | Servidor e porta de e-mail transacional |
 | `EMAIL_HOST_USER` / `EMAIL_HOST_PASSWORD` | Conforme SMTP | Credenciais do provedor |
-| `EMAIL_USE_TLS` / `EMAIL_USE_SSL` | Conforme SMTP | Ative somente um dos modos de transporte seguro |
 | `DEFAULT_FROM_EMAIL` | Recomendado | Remetente das confirmações e recuperações |
-| `EMAIL_CONFIRMATION_TIMEOUT` | Não | Validade da confirmação de e-mail em segundos; padrão `86400` |
-| `EMAIL_CONFIRMATION_RESEND_SECONDS` | Não | Intervalo mínimo de reenvio; padrão `60` |
-| `PASSWORD_RESET_TIMEOUT` | Não | Validade da recuperação de senha; padrão `3600` |
-| `DJANGO_SECURE_SSL_REDIRECT` | Recomendado | Redirecionamento obrigatório para HTTPS |
-| `SESSION_COOKIE_SECURE` | Recomendado | Envia cookie de sessão somente por HTTPS |
-| `CSRF_COOKIE_SECURE` | Recomendado | Envia cookie CSRF somente por HTTPS |
-| `SECURE_HSTS_SECONDS` | Recomendado | Duração do HSTS |
+
+Com `DJANGO_DEBUG=0`, HTTPS obrigatório, cookies seguros e HSTS já são aplicados por padrão; as variáveis `DJANGO_SECURE_SSL_REDIRECT`, `SESSION_COOKIE_SECURE`, `CSRF_COOKIE_SECURE`, `SECURE_HSTS_SECONDS`, `EMAIL_BACKEND`, `EMAIL_USE_TLS`, `EMAIL_USE_SSL`, `EMAIL_TIMEOUT` e `DB_CONN_MAX_AGE` existem apenas para sobrescrever esses padrões quando necessário.
+
+As validades da confirmação de e-mail, do reenvio e da recuperação de senha não são variáveis de ambiente: elas ficam persistidas no banco junto com a política de segurança e são editadas no console em **Configurações → E-mail e recuperação de senha**.
 
 Exemplo para um shell local:
 
@@ -176,7 +178,7 @@ Não altere `KEY_ENCRYPTION_SECRET` em um ambiente existente sem um processo de 
 
 ### Banco e migrations
 
-O banco local fica em `db.sqlite3`. Toda alteração de schema é versionada em `identity/migrations/`.
+Por padrão o banco local fica em `db.sqlite3`. Toda alteração de schema é versionada em `identity/migrations/`.
 
 ```bash
 venv/bin/python manage.py migrate
@@ -184,7 +186,39 @@ venv/bin/python manage.py showmigrations identity
 venv/bin/python manage.py makemigrations --check --dry-run --noinput
 ```
 
-Para PostgreSQL, configure `DATABASES` em `gatelite/settings.py` ou adapte o projeto para ler a conexão do ambiente antes da implantação. Não reutilize SQLite para uma instalação concorrente de produção.
+Para PostgreSQL, defina no ambiente (uma variável por linha no `.env`, sem string única de conexão):
+
+```bash
+DB_ENGINE=postgres
+DB_NAME=gatelite
+DB_USER=gatelite
+DB_PASSWORD=senha-do-banco
+DB_HOST=localhost
+DB_PORT=5432
+```
+
+Com `DB_ENGINE=sqlite` (ou ausente), as variáveis `DB_*` restantes são ignoradas. A suíte de testes sempre usa SQLite, mesmo com `DB_ENGINE=postgres` configurado. Não reutilize SQLite para uma instalação concorrente de produção.
+
+## Docker
+
+O [Dockerfile](Dockerfile) constrói uma imagem com Gunicorn e executa `collectstatic` durante o build.
+
+```bash
+docker build -t gatelite .
+docker run --rm -p 8000:8000 --env-file .env gatelite
+```
+
+A imagem não executa migrations automaticamente; rode-as antes de liberar tráfego:
+
+```bash
+docker run --rm --env-file .env gatelite python manage.py migrate
+```
+
+Observações:
+
+- Preencha o `.env` a partir de [.env.example](.env.example), com `DB_ENGINE=postgres` apontando para um PostgreSQL acessível pelo container (use `DB_HOST=host.docker.internal` ou o nome do serviço na sua rede Docker).
+- Os arquivos estáticos são coletados em `/app/staticfiles`; sirva-os por proxy reverso ou CDN, conforme o [checklist de produção](#operação-e-produção).
+- O container roda como usuário sem privilégios (`gatelite`).
 
 ## Primeiro acesso
 
@@ -569,6 +603,8 @@ A suíte está dividida em:
 - [identity/tests_account.py](identity/tests_account.py): 18 testes de perfil, confirmação de e-mail, recuperação, marca e controles.
 
 Total atual: **77 testes automatizados**.
+
+Os testes sempre rodam em SQLite, mesmo quando `DB_ENGINE=postgres` está definido no ambiente.
 
 Execute localmente:
 

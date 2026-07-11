@@ -1,4 +1,5 @@
 import os
+import sys
 from pathlib import Path
 from django.core.exceptions import ImproperlyConfigured
 
@@ -32,7 +33,24 @@ TEMPLATES = [{
     ]},
 }]
 WSGI_APPLICATION = "gatelite.wsgi.application"
-DATABASES = {"default": {"ENGINE": "django.db.backends.sqlite3", "NAME": BASE_DIR / "db.sqlite3"}}
+# Banco de dados. DB_ENGINE aceita "sqlite" (padrão) ou "postgres".
+# A suíte de testes sempre usa SQLite, independentemente do ambiente.
+TESTING = len(sys.argv) > 1 and sys.argv[1] == "test"
+DB_ENGINE = os.environ.get("DB_ENGINE", "sqlite").strip().lower()
+if TESTING or DB_ENGINE == "sqlite":
+    DATABASES = {"default": {"ENGINE": "django.db.backends.sqlite3", "NAME": BASE_DIR / "db.sqlite3"}}
+elif DB_ENGINE in ("postgres", "postgresql"):
+    DATABASES = {"default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": os.environ.get("DB_NAME", "gatelite"),
+        "USER": os.environ.get("DB_USER", "gatelite"),
+        "PASSWORD": os.environ.get("DB_PASSWORD", ""),
+        "HOST": os.environ.get("DB_HOST", "localhost"),
+        "PORT": os.environ.get("DB_PORT", "5432"),
+        "CONN_MAX_AGE": int(os.environ.get("DB_CONN_MAX_AGE", "60")),
+    }}
+else:
+    raise ImproperlyConfigured(f"DB_ENGINE inválido: {DB_ENGINE!r}. Use 'sqlite' ou 'postgres'.")
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
     {"NAME": "identity.validators.ConfigurablePasswordValidator"},
@@ -82,6 +100,5 @@ if EMAIL_USE_TLS and EMAIL_USE_SSL:
 EMAIL_TIMEOUT = int(os.environ.get("EMAIL_TIMEOUT", "10"))
 DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "GateLite <no-reply@localhost>")
 SERVER_EMAIL = os.environ.get("SERVER_EMAIL", DEFAULT_FROM_EMAIL)
-EMAIL_CONFIRMATION_TIMEOUT = int(os.environ.get("EMAIL_CONFIRMATION_TIMEOUT", "86400"))
-EMAIL_CONFIRMATION_RESEND_SECONDS = int(os.environ.get("EMAIL_CONFIRMATION_RESEND_SECONDS", "60"))
-PASSWORD_RESET_TIMEOUT = int(os.environ.get("PASSWORD_RESET_TIMEOUT", "3600"))
+# As validades de confirmação de e-mail e de recuperação de senha são
+# persistidas em SecurityPolicy e editadas no console (Configurações).

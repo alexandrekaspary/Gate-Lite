@@ -13,6 +13,9 @@ from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth import login as auth_login
 from django.contrib.auth.forms import AuthenticationForm, PasswordChangeForm
 from django.contrib.auth.models import Group, Permission, User
+from django.contrib.auth.tokens import PasswordResetTokenGenerator
+from django.utils.crypto import constant_time_compare
+from django.utils.http import base36_to_int
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
 from django.db import transaction
@@ -386,6 +389,24 @@ def account_email_confirm(request):
     return response
 
 
+class PolicyPasswordResetTokenGenerator(PasswordResetTokenGenerator):
+    """check_token do Django com a validade lida da política persistida no banco."""
+    def check_token(self, user, token):
+        if not (user and token):
+            return False
+        try:
+            ts_b36, _ = token.split("-")
+            ts = base36_to_int(ts_b36)
+        except ValueError:
+            return False
+        for secret in [self.secret, *self.secret_fallbacks]:
+            if constant_time_compare(self._make_token_with_timestamp(user, ts, secret), token):
+                break
+        else:
+            return False
+        return (self._num_seconds(self._now()) - ts) <= SecurityPolicy.load().password_reset_timeout
+
+
 class VerifiedPasswordResetView(auth_views.PasswordResetView):
     form_class=VerifiedEmailPasswordResetForm
     template_name="registration/password_reset_form.html"
@@ -410,6 +431,7 @@ class VerifiedPasswordResetDoneView(auth_views.PasswordResetDoneView):
 
 class SecurePasswordResetConfirmView(auth_views.PasswordResetConfirmView):
     form_class=SecureSetPasswordForm
+    token_generator=PolicyPasswordResetTokenGenerator()
     template_name="registration/password_reset_confirm.html"
     success_url=reverse_lazy("password-reset-complete")
 
