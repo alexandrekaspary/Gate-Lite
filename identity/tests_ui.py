@@ -87,7 +87,12 @@ class FormWidgetContractTests(TestCase):
                     self.assertTrue(bound.label, f"{form.__class__.__name__}.{name}")
                     if not isinstance(
                         field.widget,
-                        (forms.CheckboxInput, forms.RadioSelect, forms.HiddenInput),
+                        (
+                            forms.CheckboxInput,
+                            forms.CheckboxSelectMultiple,
+                            forms.RadioSelect,
+                            forms.HiddenInput,
+                        ),
                     ):
                         self.assertIn(
                             "input",
@@ -242,8 +247,11 @@ class ConsoleTemplateContractTests(TestCase):
                 form = response.context["form"]
                 self.assertTrue(set(required_names).issubset(form.fields))
                 for field in form.visible_fields():
-                    self.assertTrue(field.id_for_label)
-                    self.assertContains(response, f'for="{field.id_for_label}"')
+                    if isinstance(field.field.widget, forms.CheckboxSelectMultiple):
+                        self.assertContains(response, f'id="{field.auto_id}-label"')
+                    else:
+                        self.assertTrue(field.id_for_label)
+                        self.assertContains(response, f'for="{field.id_for_label}"')
                     self.assertContains(response, f'data-field="{field.name}"')
 
         client_form = self.client.get(reverse("console:create", args=["clients"]))

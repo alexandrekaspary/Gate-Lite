@@ -256,7 +256,8 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--gray-900); }
 
 .form-stack { display: grid; gap: 17px; }
 .field-wrapper { display: grid; min-width: 0; gap: 6px; }
-.field-wrapper > label, .setting-field > label, .token-field > label { color: var(--ink-soft); font-size: 13px; font-weight: 650; }
+.field-wrapper > label, .field-wrapper > .group-label, .setting-field > label, .token-field > label { color: var(--ink-soft); font-size: 13px; font-weight: 650; }
+.field-wrapper > .group-label,
 .field-wrapper > label:not(.checkbox-control),
 .setting-field > label:not(.switch-control),
 .token-field > label:not(.switch-control),

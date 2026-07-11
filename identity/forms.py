@@ -18,10 +18,19 @@ class StyledFormMixin:
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         for field in self.fields.values():
-            if not isinstance(field.widget, (forms.CheckboxInput, forms.RadioSelect)):
+            # Listas de seleção múltipla viram checkboxes: desmarcar um único
+            # item selecionado num <select multiple> exige Ctrl+clique, o que
+            # torna a remoção da última opção quase impossível de descobrir.
+            if isinstance(field.widget, forms.SelectMultiple) and not isinstance(field.widget, forms.CheckboxSelectMultiple):
+                field.widget = forms.CheckboxSelectMultiple(attrs=field.widget.attrs)
+                field.widget.choices = field.choices
+            if not isinstance(field.widget, (forms.CheckboxInput, forms.RadioSelect, forms.CheckboxSelectMultiple)):
                 field.widget.attrs.setdefault("class", "input")
 
 class UserCreateForm(StyledFormMixin, UserCreationForm):
+    # password1/password2 adjacentes ocupam a mesma linha do grid de 2 colunas
+    # no passo Segurança do wizard.
+    field_order = ("username","first_name","last_name","email","password1","password2","basic_access","groups","client_roles","is_active","is_staff","user_permissions")
     basic_access = forms.CharField(required=False, disabled=True, initial="Perfil próprio e alteração da própria senha", label="Acesso básico")
     email = forms.EmailField(required=False)
     groups = forms.ModelMultipleChoiceField(Group.objects.all(), required=False)

@@ -26,18 +26,20 @@
   });
 
   const searchIcon = '<svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>';
-  document.querySelectorAll('select[multiple]:not([data-no-enhance])').forEach((select) => {
-    if (select.closest('.select-enhanced')) return;
-    const field = select.closest('.field-wrapper, .setting-field');
+  document.querySelectorAll('.checkbox-list:not([data-no-enhance])').forEach((list) => {
+    if (list.closest('.select-enhanced')) return;
+    const options = [...list.querySelectorAll('label')];
+    if (!options.length) return;
+    const field = list.closest('.field-wrapper, .setting-field');
     const visibleLabel = field?.querySelector('label:not(.checkbox-control)')?.textContent?.replace('*', '').trim() || 'opções';
     const wrapper = document.createElement('div');
     wrapper.className = 'select-enhanced';
-    select.parentNode.insertBefore(wrapper, select);
+    list.parentNode.insertBefore(wrapper, list);
 
     const search = document.createElement('div');
     search.className = 'select-search';
     search.innerHTML = `${searchIcon}<input type="search" autocomplete="off" placeholder="Filtrar opções…" aria-label="Filtrar ${visibleLabel}"><span class="selection-count" aria-live="polite"></span>`;
-    wrapper.append(search, select);
+    wrapper.append(search, list);
     const empty = document.createElement('span');
     empty.className = 'select-empty';
     empty.textContent = 'Nenhuma opção corresponde à busca.';
@@ -45,23 +47,22 @@
 
     const input = search.querySelector('input');
     const count = search.querySelector('.selection-count');
-    const options = [...select.options];
     const updateCount = () => {
-      const selected = options.filter((option) => option.selected).length;
+      const selected = options.filter((option) => option.querySelector('input').checked).length;
       count.textContent = selected ? `${selected} selecionada${selected === 1 ? '' : 's'}` : 'Nenhuma';
     };
     const filterOptions = () => {
       const query = input.value.trim().toLocaleLowerCase('pt-BR');
       let visible = 0;
       options.forEach((option) => {
-        const matches = !query || option.text.toLocaleLowerCase('pt-BR').includes(query);
+        const matches = !query || option.textContent.toLocaleLowerCase('pt-BR').includes(query);
         option.hidden = !matches;
         if (matches) visible += 1;
       });
       wrapper.classList.toggle('no-results', visible === 0);
     };
     input.addEventListener('input', filterOptions);
-    select.addEventListener('change', updateCount);
+    list.addEventListener('change', updateCount);
     updateCount();
   });
 })();

@@ -46,14 +46,18 @@
       <div class="form-fields">
         {% for field in form %}
           {% if field.is_hidden %}{{ field }}{% else %}
-          <div class="field-wrapper {% if field.field.widget.input_type == 'checkbox' %}checkbox-field{% endif %} {% if field.errors %}has-error{% endif %}" data-field="{{ field.name }}">
-            {% if field.field.widget.input_type == 'checkbox' %}
+          <div class="field-wrapper {% if field.field.widget.input_type == 'checkbox' and not field.field.widget.allow_multiple_selected %}checkbox-field{% endif %} {% if field.errors %}has-error{% endif %}" data-field="{{ field.name }}">
+            {% if field.field.widget.input_type == 'checkbox' and not field.field.widget.allow_multiple_selected %}
               <span class="control-label-spacer" aria-hidden="true"></span>
               <label class="checkbox-control" for="{{ field.id_for_label }}">
                 {{ field }}
                 <span class="checkbox-ui" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></svg></span>
                 <span class="checkbox-copy"><strong>{{ field.label }}</strong>{% if field.help_text %}<small>{{ field.help_text|safe }}</small>{% endif %}</span>
               </label>
+            {% elif field.field.widget.input_type == 'checkbox' %}
+              <span class="group-label" id="{{ field.auto_id }}-label">{{ field.label }}{% if field.field.required %}<span class="required" aria-label="obrigatório">*</span>{% endif %}</span>
+              <div class="checkbox-list" role="group" aria-labelledby="{{ field.auto_id }}-label">{{ field }}</div>
+              {% if field.help_text %}<small class="field-help">{{ field.help_text|safe }}</small>{% endif %}
             {% else %}
               <label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %}<span class="required" aria-label="obrigatório">*</span>{% endif %}</label>
               {{ field }}
