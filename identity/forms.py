@@ -4,6 +4,7 @@ from urllib.parse import urlsplit
 from django import forms
 from django.contrib.auth.forms import PasswordResetForm, SetPasswordForm, UserCreationForm
 from django.contrib.auth.models import Group, Permission, User
+from django.utils import timezone
 from .email_verification import EmailConfirmationError, EmailConfirmationThrottled, email_available_for_user, normalize_email, request_email_confirmation
 from .models import ClientRole, ClientScopeAssignment, ClientURI, ClientWebOrigin, OIDCClient, OIDCScope, SecurityPolicy, UserEmailState
 
@@ -134,10 +135,17 @@ class VerifiedEmailPasswordResetForm(PasswordResetForm):
 
     def get_users(self, email):
         normalized=normalize_email(email)
+        throttle=SecurityPolicy.load().password_reset_resend_seconds
+        now=timezone.now()
         users=User._default_manager.filter(email__iexact=normalized,is_active=True).select_related("email_state")
         for user in users.iterator():
             state=getattr(user,"email_state",None)
             if user.has_usable_password() and state and state.is_current_email_verified():
+                # The throttled branch keeps the public response identical, so a
+                # rapid second request neither enumerates accounts nor sends mail.
+                if state.password_reset_sent_at and (now-state.password_reset_sent_at).total_seconds()<throttle:
+                    continue
+                UserEmailState.objects.filter(pk=state.pk).update(password_reset_sent_at=now,updated_at=now)
                 yield user
 
 
@@ -264,8 +272,8 @@ class ClientRoleForm(StyledFormMixin, forms.ModelForm):
 class SecurityPolicyForm(StyledFormMixin, forms.ModelForm):
     class Meta:
         model = SecurityPolicy
-        fields = ("password_min_length","password_require_uppercase","password_require_lowercase","password_require_number","password_require_special","mfa_mode","access_token_ttl","id_token_ttl","refresh_token_ttl","sso_session_ttl","client_secret_grace_period","email_confirmation_timeout","email_confirmation_resend_seconds","password_reset_timeout")
-        labels = {"password_min_length":"Tamanho mínimo","password_require_uppercase":"Exigir letra maiúscula","password_require_lowercase":"Exigir letra minúscula","password_require_number":"Exigir número","password_require_special":"Exigir caractere especial","mfa_mode":"Política de autenticação em dois fatores","access_token_ttl":"Validade do access token","id_token_ttl":"Validade do ID token","refresh_token_ttl":"Validade máxima do refresh token","sso_session_ttl":"Validade da sessão SSO","client_secret_grace_period":"Sobreposição de secrets na rotação","email_confirmation_timeout":"Validade da confirmação de e-mail","email_confirmation_resend_seconds":"Intervalo mínimo de reenvio","password_reset_timeout":"Validade da recuperação de senha"}
+        fields = ("password_min_length","password_require_uppercase","password_require_lowercase","password_require_number","password_require_special","mfa_mode","access_token_ttl","id_token_ttl","refresh_token_ttl","sso_session_ttl","client_secret_grace_period","email_confirmation_timeout","email_confirmation_resend_seconds","password_reset_timeout","password_reset_resend_seconds","login_max_attempts","login_lockout_seconds")
+        labels = {"password_min_length":"Tamanho mínimo","password_require_uppercase":"Exigir letra maiúscula","password_require_lowercase":"Exigir letra minúscula","password_require_number":"Exigir número","password_require_special":"Exigir caractere especial","mfa_mode":"Política de autenticação em dois fatores","access_token_ttl":"Validade do access token","id_token_ttl":"Validade do ID token","refresh_token_ttl":"Validade máxima do refresh token","sso_session_ttl":"Validade da sessão SSO","client_secret_grace_period":"Sobreposição de secrets na rotação","email_confirmation_timeout":"Validade da confirmação de e-mail","email_confirmation_resend_seconds":"Intervalo mínimo de reenvio","password_reset_timeout":"Validade da recuperação de senha","password_reset_resend_seconds":"Intervalo mínimo entre recuperações","login_max_attempts":"Tentativas de senha antes do bloqueio","login_lockout_seconds":"Duração do bloqueio de login"}
 
 class MFASetupConfirmForm(StyledFormMixin, forms.Form):
     code=forms.RegexField(r"^\d{6}$",label="Código do aplicativo",widget=forms.TextInput(attrs={"inputmode":"numeric","autocomplete":"one-time-code","maxlength":"6"}))

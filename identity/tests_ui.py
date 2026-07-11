@@ -468,6 +468,9 @@ class PolicyAndRouteContractTests(TestCase):
                 "email_confirmation_timeout": 43200,
                 "email_confirmation_resend_seconds": 90,
                 "password_reset_timeout": 1800,
+                "password_reset_resend_seconds": 120,
+                "login_max_attempts": 8,
+                "login_lockout_seconds": 600,
             },
         )
         self.assertRedirects(
@@ -482,6 +485,9 @@ class PolicyAndRouteContractTests(TestCase):
         self.assertEqual(policy.email_confirmation_timeout, 43200)
         self.assertEqual(policy.email_confirmation_resend_seconds, 90)
         self.assertEqual(policy.password_reset_timeout, 1800)
+        self.assertEqual(policy.password_reset_resend_seconds, 120)
+        self.assertEqual(policy.login_max_attempts, 8)
+        self.assertEqual(policy.login_lockout_seconds, 600)
         self.assertTrue(
             AuditEvent.objects.filter(
                 actor=operator, action="security_policy.updated"

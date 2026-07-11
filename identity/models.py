@@ -237,6 +237,9 @@ class SecurityPolicy(models.Model):
     email_confirmation_timeout = models.PositiveIntegerField(default=86400, help_text="Segundos",validators=[MinValueValidator(300),MaxValueValidator(604800)])
     email_confirmation_resend_seconds = models.PositiveIntegerField(default=60, help_text="Segundos",validators=[MinValueValidator(10),MaxValueValidator(3600)])
     password_reset_timeout = models.PositiveIntegerField(default=3600, help_text="Segundos",validators=[MinValueValidator(300),MaxValueValidator(604800)])
+    password_reset_resend_seconds = models.PositiveIntegerField(default=60, help_text="Segundos",validators=[MinValueValidator(10),MaxValueValidator(3600)])
+    login_max_attempts = models.PositiveSmallIntegerField(default=5, help_text="Erros de senha consecutivos antes do bloqueio temporário",validators=[MinValueValidator(1),MaxValueValidator(50)])
+    login_lockout_seconds = models.PositiveIntegerField(default=300, help_text="Segundos",validators=[MinValueValidator(30),MaxValueValidator(86400)])
 
     class Meta: verbose_name = "Política de segurança"
     @classmethod
@@ -280,6 +283,8 @@ class UserMFA(models.Model):
 class UserSecurityState(models.Model):
     user=models.OneToOneField(User,on_delete=models.CASCADE,related_name="security_state")
     authentication_version=models.UUIDField(default=uuid.uuid4)
+    failed_login_attempts=models.PositiveSmallIntegerField(default=0)
+    login_locked_until=models.DateTimeField(null=True,blank=True)
     updated_at=models.DateTimeField(auto_now=True)
 
 
@@ -293,6 +298,7 @@ class UserEmailState(models.Model):
     confirmation_token_hash=models.CharField(max_length=64,blank=True,db_index=True)
     confirmation_expires_at=models.DateTimeField(null=True,blank=True)
     confirmation_sent_at=models.DateTimeField(null=True,blank=True)
+    password_reset_sent_at=models.DateTimeField(null=True,blank=True)
     verified_at=models.DateTimeField(null=True,blank=True)
     created_at=models.DateTimeField(auto_now_add=True)
     updated_at=models.DateTimeField(auto_now=True)

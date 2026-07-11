@@ -82,10 +82,23 @@ def backfill_basic_self_service_permissions(sender, **kwargs):
 
 @receiver(user_logged_in)
 def audit_login(sender,request,user,**kwargs):
-    from .models import AuditEvent
+    from .models import AuditEvent, UserSecurityState
+    UserSecurityState.objects.filter(user=user).update(failed_login_attempts=0,login_locked_until=None)
     AuditEvent.objects.create(actor=user,action="authentication.login",target_type="User",target_id=str(user.pk),ip_address=request.META.get("REMOTE_ADDR"))
 
 @receiver(user_login_failed)
 def audit_login_failure(sender,credentials,request,**kwargs):
-    from .models import AuditEvent
+    from django.db import transaction
+    from .models import AuditEvent, SecurityPolicy, UserSecurityState
     AuditEvent.objects.create(action="authentication.failed",target_type="User",metadata={"username":str(credentials.get("username", ""))[:150]},ip_address=request.META.get("REMOTE_ADDR") if request else None)
+    user=User.objects.filter(username=credentials.get("username","")).first()
+    if not user: return
+    policy=SecurityPolicy.load()
+    with transaction.atomic():
+        state,_=UserSecurityState.objects.select_for_update().get_or_create(user=user)
+        state.failed_login_attempts+=1
+        if state.failed_login_attempts>=policy.login_max_attempts:
+            state.login_locked_until=timezone.now()+timezone.timedelta(seconds=policy.login_lockout_seconds)
+            state.failed_login_attempts=0
+            AuditEvent.objects.create(action="authentication.locked_out",target_type="User",target_id=str(user.pk),metadata={"seconds":policy.login_lockout_seconds},ip_address=request.META.get("REMOTE_ADDR") if request else None)
+        state.save(update_fields=["failed_login_attempts","login_locked_until","updated_at"])

@@ -553,3 +553,93 @@ class ConsoleEmailVerificationTests(EmailSecurityMixin, TestCase):
         self.assertTrue(state.confirmation_token_hash)
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(mail.outbox[0].to, ["managed.new@example.com"])
+
+
+class PolicyDrivenRecoveryTimeoutTests(EmailSecurityMixin, TestCase):
+    """As validades e janelas de reenvio vêm da SecurityPolicy persistida."""
+
+    def setUp(self):
+        self.user = User.objects.create_user(
+            "policy-recovery",
+            email="policy.recovery@example.com",
+            password=PASSWORD,
+        )
+        self.mark_email_verified(self.user)
+        mail.outbox.clear()
+
+    def test_reset_link_validity_follows_the_persisted_policy(self):
+        from datetime import datetime, timedelta
+
+        from .models import SecurityPolicy
+        from .views import PolicyPasswordResetTokenGenerator, SecurePasswordResetConfirmView
+
+        self.assertIsInstance(
+            SecurePasswordResetConfirmView.token_generator,
+            PolicyPasswordResetTokenGenerator,
+        )
+        policy = SecurityPolicy.load()
+        policy.password_reset_timeout = 600
+        policy.save()
+
+        class AgedGenerator(PolicyPasswordResetTokenGenerator):
+            def __init__(self, age_seconds):
+                super().__init__()
+                self.age_seconds = age_seconds
+
+            def _now(self):
+                return datetime.now() - timedelta(seconds=self.age_seconds)
+
+        generator = PolicyPasswordResetTokenGenerator()
+        within = AgedGenerator(300).make_token(self.user)
+        beyond = AgedGenerator(900).make_token(self.user)
+        self.assertTrue(generator.check_token(self.user, within))
+        self.assertFalse(generator.check_token(self.user, beyond))
+
+        # A validade é conferida ao abrir o link: ampliar a política revalida
+        # um token já emitido, sem reemissão.
+        policy.password_reset_timeout = 1200
+        policy.save()
+        self.assertTrue(generator.check_token(self.user, beyond))
+
+    def test_second_reset_request_is_throttled_without_changing_the_response(self):
+        from .models import SecurityPolicy
+
+        policy = SecurityPolicy.load()
+        policy.password_reset_resend_seconds = 120
+        policy.save()
+
+        first = self.client.post(
+            reverse("password-reset"), {"email": self.user.email}, follow=True
+        )
+        second = self.client.post(
+            reverse("password-reset"), {"email": self.user.email}, follow=True
+        )
+        self.assertEqual(first.status_code, 200)
+        self.assertEqual(second.status_code, 200)
+        self.assertEqual(first.content, second.content)
+        self.assertEqual(len(mail.outbox), 1)
+
+        UserEmailState.objects.filter(user=self.user).update(
+            password_reset_sent_at=timezone.now() - timezone.timedelta(seconds=121)
+        )
+        self.client.post(reverse("password-reset"), {"email": self.user.email})
+        self.assertEqual(len(mail.outbox), 2)
+
+    def test_confirmation_expiry_and_resend_window_come_from_the_policy(self):
+        from .email_verification import EmailConfirmationThrottled, request_email_confirmation
+        from .models import SecurityPolicy
+
+        policy = SecurityPolicy.load()
+        policy.email_confirmation_timeout = 600
+        policy.email_confirmation_resend_seconds = 45
+        policy.save()
+
+        user = User.objects.create_user("policy-mail", password=PASSWORD)
+        request_email_confirmation(user, "policy-mail@example.com")
+        state = UserEmailState.objects.get(user=user)
+        remaining = (state.confirmation_expires_at - timezone.now()).total_seconds()
+        self.assertAlmostEqual(remaining, 600, delta=30)
+
+        with self.assertRaises(EmailConfirmationThrottled) as ctx:
+            request_email_confirmation(user, "policy-mail@example.com")
+        self.assertLessEqual(ctx.exception.retry_after, 45)

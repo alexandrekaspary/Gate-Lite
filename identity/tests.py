@@ -9,7 +9,7 @@ from django.test import TestCase, override_settings
 from django.utils import timezone
 from unittest.mock import patch
 
-from .crypto import decrypt_value
+from .crypto import decrypt_value, private_pem
 from .forms import ClientForm, ClientRoleForm, GroupForm
 from .mfa import (
     hash_recovery_codes,
@@ -1782,3 +1782,141 @@ class MFAEnforcementAndAdminResetTests(MFATestMixin, TestCase):
                 target_id=str(target.pk),
             ).exists()
         )
+
+
+class EndSessionTests(OIDCTestCase):
+    def setUp(self):
+        self.user = User.objects.create_user("logout-user", password="Strong-password-123!")
+        self.web = self.make_client("portal-logout")
+        ClientURI.objects.create(
+            client=self.web,
+            kind=ClientURI.Kind.POST_LOGOUT,
+            uri="https://portal-logout.example/signed-out",
+        )
+
+    def test_end_session_revokes_sid_ends_the_browser_session_and_echoes_state(self):
+        tokens = self.tokens_via_code(self.web, self.user, scope="openid")
+        sid = self.decode_without_verification(tokens["id_token"])["sid"]
+
+        response = self.client.get("/oidc/logout/", {
+            "id_token_hint": tokens["id_token"],
+            "post_logout_redirect_uri": "https://portal-logout.example/signed-out",
+            "state": "after-logout",
+        })
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, "https://portal-logout.example/signed-out?state=after-logout")
+        self.assertIsNotNone(OIDCSession.objects.get(pk=sid).revoked_at)
+
+        protected = self.client.get("/account/")
+        self.assertEqual(protected.status_code, 302)
+        self.assertIn("/login/", protected.url)
+
+    def test_unregistered_uri_or_missing_hint_never_produces_an_open_redirect(self):
+        tokens = self.tokens_via_code(self.web, self.user, scope="openid")
+
+        hijack = self.client.get("/oidc/logout/", {
+            "id_token_hint": tokens["id_token"],
+            "post_logout_redirect_uri": "https://evil.example/phish",
+        })
+        self.assertEqual(hijack.status_code, 302)
+        self.assertEqual(hijack.url, "/login/")
+
+        self.client.force_login(self.user)
+        hintless = self.client.get("/oidc/logout/", {
+            "post_logout_redirect_uri": "https://portal-logout.example/signed-out",
+        })
+        self.assertEqual(hintless.status_code, 302)
+        self.assertEqual(hintless.url, "/login/")
+
+        self.client.force_login(self.user)
+        tampered = tokens["id_token"][:-6] + "aaaaaa"
+        forged_hint = self.client.get("/oidc/logout/", {
+            "id_token_hint": tampered,
+            "post_logout_redirect_uri": "https://portal-logout.example/signed-out",
+        })
+        self.assertEqual(forged_hint.status_code, 302)
+        self.assertEqual(forged_hint.url, "/login/")
+
+
+class RetiredSigningKeyTests(OIDCTestCase):
+    def test_tokens_from_a_long_retired_key_are_rejected_like_the_jwks(self):
+        user = User.objects.create_user("key-user", password="Strong-password-123!")
+        client = self.make_client("portal-keys")
+        tokens = self.tokens_via_code(client, user, scope="openid")
+        old = SigningKey.objects.get(active=True)
+
+        # Dentro da janela de retenção a chave recém-aposentada continua válida,
+        # exatamente como no JWKS publicado.
+        old.active = False
+        old.retired_at = timezone.now()
+        old.save(update_fields=["active", "retired_at"])
+        within = self.client.get(
+            "/oidc/userinfo/", HTTP_AUTHORIZATION=f"Bearer {tokens['access_token']}"
+        )
+        self.assertEqual(within.status_code, 200)
+
+        # Além da retenção, nem um token forjado com exp futuro pela chave
+        # antiga (cenário de chave comprometida e rotacionada) é aceito.
+        policy = SecurityPolicy.load()
+        retention = max(policy.access_token_ttl, policy.id_token_ttl) + 300
+        old.retired_at = timezone.now() - timezone.timedelta(seconds=retention + 60)
+        old.save(update_fields=["retired_at"])
+        import time as time_module
+        now = int(time_module.time())
+        forged = jwt.encode(
+            {
+                "iss": ISSUER, "sub": str(user.pk), "aud": client.client_id,
+                "azp": client.client_id, "jti": "forged-jti", "iat": now,
+                "exp": now + 3600, "scope": "openid", "token_use": "access",
+            },
+            private_pem(old), algorithm="RS256", headers={"kid": old.kid},
+        )
+        rejected = self.client.get("/oidc/userinfo/", HTTP_AUTHORIZATION=f"Bearer {forged}")
+        self.assertEqual(rejected.status_code, 401)
+
+
+class LoginLockoutTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user("lockout-user", password="Strong-password-123!")
+        policy = SecurityPolicy.load()
+        policy.login_max_attempts = 3
+        policy.login_lockout_seconds = 300
+        policy.save()
+
+    def attempt(self, password):
+        return self.client.post("/login/", {"username": "lockout-user", "password": password})
+
+    def test_configured_attempts_lock_the_account_and_expiry_unlocks(self):
+        from django.contrib.auth import SESSION_KEY
+
+        for _ in range(3):
+            self.assertEqual(self.attempt("wrong-password").status_code, 200)
+        state = UserSecurityState.objects.get(user=self.user)
+        self.assertIsNotNone(state.login_locked_until)
+        self.assertTrue(
+            AuditEvent.objects.filter(
+                action="authentication.locked_out", target_id=str(self.user.pk)
+            ).exists()
+        )
+
+        locked = self.attempt("Strong-password-123!")
+        self.assertEqual(locked.status_code, 429)
+        self.assertContains(locked, "bloqueada", status_code=429)
+        self.assertNotIn(SESSION_KEY, self.client.session)
+
+        UserSecurityState.objects.filter(user=self.user).update(
+            login_locked_until=timezone.now() - timezone.timedelta(seconds=1)
+        )
+        unlocked = self.attempt("Strong-password-123!")
+        self.assertEqual(unlocked.status_code, 302)
+        state.refresh_from_db()
+        self.assertEqual(state.failed_login_attempts, 0)
+        self.assertIsNone(state.login_locked_until)
+
+    def test_successful_login_resets_the_failure_counter(self):
+        self.attempt("wrong-password")
+        self.attempt("wrong-password")
+        self.assertEqual(self.attempt("Strong-password-123!").status_code, 302)
+        state = UserSecurityState.objects.get(user=self.user)
+        self.assertEqual(state.failed_login_attempts, 0)
+        self.assertIsNone(state.login_locked_until)

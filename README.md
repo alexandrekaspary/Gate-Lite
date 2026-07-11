@@ -42,7 +42,8 @@ O modelo lembra o Keycloak, mas usa um único domínio de identidade: não exist
 - TOTP/2FA, QR Code, recovery codes e step-up por client.
 - Edição do perfil com username imutável no autosserviço.
 - Confirmação de e-mail por link temporário e de uso único.
-- Recuperação de senha somente por e-mail confirmado.
+- Recuperação de senha somente por e-mail confirmado, com reenvio limitado.
+- Bloqueio temporário configurável após erros consecutivos de senha no login.
 - Claims OIDC `auth_time`, `amr` e `acr`.
 - Chaves RSA privadas cifradas no banco; nenhum arquivo de chave privada.
 - Rotação de client secrets e de chaves de assinatura.
@@ -144,6 +145,7 @@ O Django lê variáveis do ambiente do processo. O arquivo [.env.example](.env.e
 | `DJANGO_ALLOWED_HOSTS` | Sim | Hosts separados por vírgula |
 | `CSRF_TRUSTED_ORIGINS` | Conforme implantação | Origens HTTPS separadas por vírgula |
 | `OIDC_ISSUER` | Sim | URL pública e estável do emissor, sem barra final |
+| `TRUST_PROXY_SSL_HEADER` | Atrás de proxy TLS | `1` faz o Django confiar em `X-Forwarded-Proto: https`; ative somente se o proxy sempre definir o header |
 | `DB_ENGINE` | Recomendado | `sqlite` (padrão) ou `postgres` |
 | `DB_NAME` | Com Postgres | Nome do banco; padrão `gatelite` |
 | `DB_USER` | Com Postgres | Usuário do banco; padrão `gatelite` |
@@ -156,7 +158,7 @@ O Django lê variáveis do ambiente do processo. O arquivo [.env.example](.env.e
 
 Com `DJANGO_DEBUG=0`, HTTPS obrigatório, cookies seguros e HSTS já são aplicados por padrão; as variáveis `DJANGO_SECURE_SSL_REDIRECT`, `SESSION_COOKIE_SECURE`, `CSRF_COOKIE_SECURE`, `SECURE_HSTS_SECONDS`, `EMAIL_BACKEND`, `EMAIL_USE_TLS`, `EMAIL_USE_SSL`, `EMAIL_TIMEOUT` e `DB_CONN_MAX_AGE` existem apenas para sobrescrever esses padrões quando necessário.
 
-As validades da confirmação de e-mail, do reenvio e da recuperação de senha não são variáveis de ambiente: elas ficam persistidas no banco junto com a política de segurança e são editadas no console em **Configurações → E-mail e recuperação de senha**.
+As validades da confirmação de e-mail, do reenvio e da recuperação de senha não são variáveis de ambiente: elas ficam persistidas no banco junto com a política de segurança e são editadas no console em **Configurações → E-mail e recuperação de senha**. O mesmo vale para o bloqueio por força bruta no login (tentativas máximas e duração), em **Configurações → Proteção contra força bruta**.
 
 Exemplo para um shell local:
 
@@ -592,11 +594,11 @@ GateLite não pretende reproduzir todos os módulos do Keycloak. O projeto não 
 
 A suíte está dividida em:
 
-- [identity/tests.py](identity/tests.py): 40 testes de protocolo, segurança, roles, tokens, RBAC e 2FA;
+- [identity/tests.py](identity/tests.py): 45 testes de protocolo, segurança, roles, tokens, RBAC, 2FA, logout OIDC, retenção de chaves e lockout de login;
 - [identity/tests_ui.py](identity/tests_ui.py): 19 testes de interface, formulários, labels, rotas e regressões de alinhamento.
-- [identity/tests_account.py](identity/tests_account.py): 18 testes de perfil, confirmação de e-mail, recuperação, marca e controles.
+- [identity/tests_account.py](identity/tests_account.py): 21 testes de perfil, confirmação de e-mail, recuperação, políticas persistidas, marca e controles.
 
-Total atual: **77 testes automatizados**.
+Total atual: **85 testes automatizados**.
 
 Os testes sempre rodam em SQLite, mesmo quando `DB_ENGINE=postgres` está definido no ambiente.
 
@@ -619,7 +621,7 @@ O workflow [.github/workflows/tests.yml](.github/workflows/tests.yml) executa au
 - Python 3.12 e 3.13;
 - `manage.py check`;
 - detecção de migrations esquecidas;
-- todos os 77 testes Django.
+- todos os 85 testes Django.
 
 A cobertura comportamental inclui PKCE, clients públicos/confidenciais, Basic/Post, audiences, roles diretas e por grupos, roles compostas, service accounts, CORS, refresh replay, revogação, Introspection, JWT/JWKS, RBAC, políticas, login, MFA, recovery codes, lockout, templates, labels, filtros, paginação e métodos HTTP.
 

@@ -78,6 +78,11 @@ SECURE_HSTS_INCLUDE_SUBDOMAINS = not DEBUG
 SECURE_HSTS_PRELOAD = not DEBUG
 SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = "DENY"
+# Ative somente atrás de um proxy reverso que SEMPRE define X-Forwarded-Proto;
+# sem isso o Django não reconhece HTTPS terminado no proxy (loop de redirect,
+# cookies seguros ausentes e next= http aceito).
+if os.environ.get("TRUST_PROXY_SSL_HEADER", "0") == "1":
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 OIDC_ISSUER = os.environ.get("OIDC_ISSUER", "http://localhost:8000").rstrip("/")
 KEY_ENCRYPTION_SECRET = os.environ.get("KEY_ENCRYPTION_SECRET", SECRET_KEY)
 if not DEBUG and "KEY_ENCRYPTION_SECRET" not in os.environ:

@@ -60,6 +60,11 @@ def create_mfa_challenge(request,user,next_url,auth_time=None):
 def login_view(request):
     if request.user.is_authenticated: return redirect("account")
     form=AuthenticationForm(request,data=request.POST or None)
+    # A checagem de lockout precede a verificação de senha: uma conta bloqueada
+    # não gasta hash nem permite continuar adivinhando durante a janela.
+    if request.method=="POST" and UserSecurityState.objects.filter(user__username=request.POST.get("username",""),login_locked_until__gt=timezone.now()).exists():
+        messages.error(request,"Conta temporariamente bloqueada por excesso de tentativas. Tente novamente mais tarde.")
+        return render(request,"registration/login.html",{"form":AuthenticationForm(request),"next":request.POST.get("next","")},status=429)
     if request.method=="POST" and form.is_valid():
         user=form.get_user(); next_url=safe_next(request,request.POST.get("next"))
         mfa=UserMFA.objects.filter(user=user,enabled=True).first()
@@ -100,7 +105,9 @@ def login_2fa(request):
         form.add_error("code",f"Código inválido, expirado ou já utilizado. Restam {5-challenge.attempts} tentativas.")
     return render(request,"registration/login_2fa.html",{"form":form})
 def decode_signed_token(raw, verify_audience=False, audience=None):
-    header=jwt.get_unverified_header(raw); key=SigningKey.objects.get(kid=header["kid"])
+    # Aceita somente a chave ativa ou aposentadas dentro da janela de retenção,
+    # espelhando o JWKS; uma chave rotacionada há muito tempo não verifica mais.
+    header=jwt.get_unverified_header(raw); key=SigningKey.objects.filter(models_q_active_or_recent()).get(kid=header["kid"])
     return jwt.decode(raw,jwt.PyJWK(key.public_jwk).key,algorithms=["RS256"],issuer=settings.OIDC_ISSUER,audience=audience,options={"verify_aud":verify_audience})
 def resolve_audience(client, audience_id):
     if not audience_id or audience_id == client.client_id: return client
