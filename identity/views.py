@@ -350,7 +350,10 @@ def account_email_resend(request):
     except Exception:
         messages.error(request,"Não foi possível enviar a mensagem. Verifique a configuração de e-mail e tente novamente.")
     else:
-        messages.success(request,"Enviamos um novo link de confirmação.")
+        if settings.EMAIL_ENABLED:
+            messages.success(request,"Enviamos um novo link de confirmação.")
+        else:
+            messages.info(request,"O envio de e-mails está desativado; nenhum link foi enviado.")
     return redirect("account-profile-edit")
 
 

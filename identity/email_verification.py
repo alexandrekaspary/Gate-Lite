@@ -99,6 +99,8 @@ def request_email_confirmation(user, email, request=None, actor=None, ip_address
     target = normalize_email(email)
     if not email_available_for_user(target, user):
         raise EmailAlreadyInUse("Este endereço de e-mail já está em uso.")
+    if not settings.EMAIL_ENABLED:
+        return EmailConfirmationRequest(sent=False, pending_email=target)
 
     now = timezone.now()
     policy = SecurityPolicy.load()

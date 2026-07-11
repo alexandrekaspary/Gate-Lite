@@ -4,6 +4,38 @@ from pathlib import Path
 from django.core.exceptions import ImproperlyConfigured
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+TESTING = len(sys.argv) > 1 and sys.argv[1] == "test"
+
+
+def load_dotenv(path: Path) -> None:
+    """Carrega um arquivo .env sem substituir variáveis já exportadas."""
+    if not path.is_file():
+        return
+
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        if line.startswith("export "):
+            line = line[7:].lstrip()
+        if "=" not in line:
+            continue
+
+        key, value = line.split("=", 1)
+        key = key.strip()
+        value = value.strip()
+        if not key:
+            continue
+        if len(value) >= 2 and value[0] == value[-1] and value[0] in {"'", '"'}:
+            value = value[1:-1]
+        os.environ.setdefault(key, value)
+
+
+# Permite executar os comandos Django localmente com as variáveis do .env.
+# Variáveis exportadas pelo sistema ou pelo container sempre têm precedência.
+if not TESTING:
+    load_dotenv(BASE_DIR / ".env")
+
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "dev-only-change-me-before-production")
 DEBUG = os.environ.get("DJANGO_DEBUG", "1") == "1"
 if not DEBUG and "DJANGO_SECRET_KEY" not in os.environ:
@@ -12,9 +44,9 @@ ALLOWED_HOSTS = [h.strip() for h in os.environ.get("DJANGO_ALLOWED_HOSTS", "loca
 CSRF_TRUSTED_ORIGINS = [v for v in os.environ.get("CSRF_TRUSTED_ORIGINS", "").split(",") if v]
 
 INSTALLED_APPS = [
+    "identity",
     "django.contrib.admin", "django.contrib.auth", "django.contrib.contenttypes",
     "django.contrib.sessions", "django.contrib.messages", "django.contrib.staticfiles",
-    "identity",
 ]
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware", "django.contrib.sessions.middleware.SessionMiddleware",
@@ -35,7 +67,6 @@ TEMPLATES = [{
 WSGI_APPLICATION = "gatelite.wsgi.application"
 # Banco de dados. DB_ENGINE aceita "sqlite" (padrão) ou "postgres".
 # A suíte de testes sempre usa SQLite, independentemente do ambiente.
-TESTING = len(sys.argv) > 1 and sys.argv[1] == "test"
 DB_ENGINE = os.environ.get("DB_ENGINE", "sqlite").strip().lower()
 if TESTING or DB_ENGINE == "sqlite":
     DATABASES = {"default": {"ENGINE": "django.db.backends.sqlite3", "NAME": BASE_DIR / "db.sqlite3"}}
@@ -88,22 +119,33 @@ KEY_ENCRYPTION_SECRET = os.environ.get("KEY_ENCRYPTION_SECRET", SECRET_KEY)
 if not DEBUG and "KEY_ENCRYPTION_SECRET" not in os.environ:
     raise ImproperlyConfigured("KEY_ENCRYPTION_SECRET é obrigatório em produção.")
 
-# Transactional e-mail. The console backend keeps local development usable;
-# production defaults to SMTP and must receive credentials through the env.
-EMAIL_BACKEND = os.environ.get(
+# E-mail transacional. Sem um host SMTP em produção, os envios são descartados
+# para que a criação de contas e outros fluxos não tentem conectar a localhost.
+_SMTP_EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+_configured_email_backend = os.environ.get(
     "EMAIL_BACKEND",
-    "django.core.mail.backends.console.EmailBackend" if DEBUG else "django.core.mail.backends.smtp.EmailBackend",
+    "django.core.mail.backends.console.EmailBackend" if DEBUG else _SMTP_EMAIL_BACKEND,
 )
-EMAIL_HOST = os.environ.get("EMAIL_HOST", "localhost")
-EMAIL_PORT = int(os.environ.get("EMAIL_PORT", "587"))
+EMAIL_HOST = os.environ.get("EMAIL_HOST", "").strip()
+EMAIL_ENABLED = os.environ.get(
+    "EMAIL_ENABLED",
+    "1" if _configured_email_backend != _SMTP_EMAIL_BACKEND or EMAIL_HOST else "0",
+) == "1"
+EMAIL_BACKEND = (
+    _configured_email_backend
+    if EMAIL_ENABLED
+    else "django.core.mail.backends.dummy.EmailBackend"
+)
+EMAIL_PORT = int(os.environ.get("EMAIL_PORT") or "587")
 EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
 EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
 EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS", "1") == "1"
 EMAIL_USE_SSL = os.environ.get("EMAIL_USE_SSL", "0") == "1"
-if EMAIL_USE_TLS and EMAIL_USE_SSL:
+if EMAIL_ENABLED and _configured_email_backend == _SMTP_EMAIL_BACKEND and EMAIL_USE_TLS and EMAIL_USE_SSL:
     raise ImproperlyConfigured("EMAIL_USE_TLS e EMAIL_USE_SSL não podem ser ativados juntos.")
-EMAIL_TIMEOUT = int(os.environ.get("EMAIL_TIMEOUT", "10"))
+EMAIL_TIMEOUT = int(os.environ.get("EMAIL_TIMEOUT") or "10")
 DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "GateLite <no-reply@localhost>")
 SERVER_EMAIL = os.environ.get("SERVER_EMAIL", DEFAULT_FROM_EMAIL)
+DEFAULT_SUPERUSER_USERNAME = os.environ.get("DJANGO_DEFAULT_SUPERUSER_USERNAME", "admin")
 # As validades de confirmação de e-mail e de recuperação de senha são
 # persistidas em SecurityPolicy e editadas no console (Configurações).

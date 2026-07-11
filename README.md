@@ -34,7 +34,9 @@ Acesse:
 
 ## Configuração
 
-O Django lê variáveis do ambiente do processo. Use [.env.example](.env.example) como referência. Em produção são obrigatórios `DJANGO_SECRET_KEY`, `KEY_ENCRYPTION_SECRET`, `DJANGO_ALLOWED_HOSTS` e `OIDC_ISSUER`, com `DJANGO_DEBUG=0`.
+O Django carrega o arquivo `.env` na raiz do projeto e também lê variáveis do ambiente do processo; estas últimas têm precedência. A suíte de testes não carrega esse arquivo. Use [.env.example](.env.example) como referência. Em produção são obrigatórios `DJANGO_SECRET_KEY`, `KEY_ENCRYPTION_SECRET`, `DJANGO_ALLOWED_HOSTS` e `OIDC_ISSUER`, com `DJANGO_DEBUG=0`.
+
+Deixe `EMAIL_HOST` vazio para desativar os envios de e-mail. O `createsuperuser` sugere `admin` como nome de usuário; altere `DJANGO_DEFAULT_SUPERUSER_USERNAME` se necessário.
 
 Gere valores independentes e longos para as duas chaves:
 

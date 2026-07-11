@@ -16,7 +16,7 @@ from django.contrib.auth import SESSION_KEY
 from django.contrib.auth.models import User
 from django.contrib.sessions.models import Session
 from django.core import mail
-from django.test import Client, SimpleTestCase, TestCase
+from django.test import Client, SimpleTestCase, TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
@@ -522,6 +522,23 @@ class ConsoleEmailVerificationTests(EmailSecurityMixin, TestCase):
         self.assertTrue(state.confirmation_token_hash)
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(mail.outbox[0].to, ["created@example.com"])
+
+    @override_settings(EMAIL_ENABLED=False)
+    def test_confirmation_is_skipped_when_email_is_disabled(self):
+        from .email_verification import request_email_confirmation
+
+        user = User.objects.create_user(
+            "without-email-delivery",
+            email="without.delivery@example.com",
+            password=PASSWORD,
+        )
+        result = request_email_confirmation(user, user.email)
+
+        state = UserEmailState.objects.get(user=user)
+        self.assertFalse(result.sent)
+        self.assertEqual(state.pending_email, "")
+        self.assertEqual(state.confirmation_token_hash, "")
+        self.assertEqual(mail.outbox, [])
 
     def test_admin_email_edit_is_pending_and_does_not_silently_claim_address(self):
         target = User.objects.create_user(
