@@ -26,7 +26,11 @@ def user_claims(user, client, scope):
     claims = {"sub": str(user.pk), "preferred_username": user.username,
               "roles":roles, "resource_access":{client.client_id:{"roles":roles}}}
     requested = set(scope.split())
-    if "profile" in requested: claims.update({"name": user.get_full_name() or user.username, "given_name":user.first_name, "family_name":user.last_name})
+    if "profile" in requested:
+        preferences=getattr(user,"preferences",None); policy=SecurityPolicy.load()
+        claims.update({"name": user.get_full_name() or user.username, "given_name":user.first_name, "family_name":user.last_name,
+                       "locale":preferences.language if preferences else policy.default_language,
+                       "zoneinfo":preferences.timezone if preferences else policy.default_timezone})
     if "email" in requested:
         email_state=getattr(user,"email_state",None)
         claims.update({

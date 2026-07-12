@@ -136,6 +136,8 @@ O header traz `{"alg": "RS256", "kid": "..."}` — use o `kid` para escolher a c
   "name": "Ana Souza",
   "given_name": "Ana",
   "family_name": "Souza",
+  "locale": "pt-BR",
+  "zoneinfo": "America/Sao_Paulo",
   "email": "ana.souza@example.com",
   "email_verified": true,
   "groups": ["financeiro"],
@@ -155,6 +157,7 @@ Em tokens de Client Credentials não há sessão: saem `sub: "client:worker-serv
 | `roles` / `resource_access` | Roles efetivas para a audience |
 | `groups` | Grupos relevantes para o client (scope `groups`) |
 | `email` / `email_verified` | Verificado só se o endereço confirmado ainda é o atual |
+| `locale` / `zoneinfo` | Idioma e fuso horário do usuário (scope `profile`) |
 | `auth_time`, `amr`, `acr` | Quando e como o usuário autenticou (`["pwd","otp"]`, `acr:2` = com segundo fator) |
 | `sid`, `jti` | Sessão OIDC e id único do token |
 

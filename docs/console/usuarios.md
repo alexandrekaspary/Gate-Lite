@@ -13,6 +13,7 @@ O formulário é dividido em quatro etapas.
 | **Usuário (username)** | Identificador de login. No autosserviço o usuário **nunca** consegue alterá-lo; ele aparece nos JWTs como `preferred_username`. |
 | **Nome / Sobrenome** | Compõem os claims `given_name`, `family_name` e `name` quando o scope `profile` é solicitado. |
 | **E-mail** | Opcional, mas necessário para confirmação e recuperação de senha. Endereços são únicos (sem diferenciar maiúsculas). Ao salvar, o GateLite envia automaticamente um link de confirmação. |
+| **Idioma / Fuso horário** | Pré-selecionados com os padrões definidos em [Configurações](configuracoes). Saem nos JWTs como os claims `locale` e `zoneinfo` quando o scope `profile` é solicitado. |
 
 ### Etapa 2 — Segurança
 

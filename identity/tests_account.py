@@ -162,7 +162,8 @@ class AccountProfileEmailTests(EmailSecurityMixin, TestCase):
         self.assertEqual(page.status_code, 200)
         self.assertTemplateUsed(page, "account/profile_edit.html")
         self.assertEqual(
-            list(page.context["form"].fields), ["first_name", "last_name", "email"]
+            list(page.context["form"].fields),
+            ["first_name", "last_name", "email", "language", "timezone"],
         )
         self.assertContains(page, 'id="account-username"')
         self.assertContains(page, 'id="account-username" type="text"', html=False)

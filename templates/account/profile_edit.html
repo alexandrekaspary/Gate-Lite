@@ -7,7 +7,7 @@
   <div>
     <p class="eyebrow">Minha conta</p>
     <h1>Editar dados pessoais</h1>
-    <p>Atualize seu nome e o endereço usado para comunicações de segurança.</p>
+    <p>Atualize seu nome, idioma, fuso horário e o endereço usado para comunicações de segurança.</p>
   </div>
 </section>
 
@@ -42,6 +42,19 @@
         <small class="field-help">Ao informar um novo endereço, enviaremos um link de confirmação antes de ativá-lo.</small>
         {% for error in form.email.errors %}<span class="field-error" role="alert">{{ error }}</span>{% endfor %}
       </div>
+      <div class="account-form-row">
+        <div class="field-wrapper {% if form.language.errors %}has-error{% endif %}">
+          <label for="{{ form.language.id_for_label }}">Idioma</label>
+          {{ form.language }}
+          {% for error in form.language.errors %}<span class="field-error" role="alert">{{ error }}</span>{% endfor %}
+        </div>
+        <div class="field-wrapper {% if form.timezone.errors %}has-error{% endif %}">
+          <label for="{{ form.timezone.id_for_label }}">Fuso horário</label>
+          {{ form.timezone }}
+          {% for error in form.timezone.errors %}<span class="field-error" role="alert">{{ error }}</span>{% endfor %}
+        </div>
+      </div>
+      <small class="field-help">Aplicações conectadas recebem seu idioma e fuso horário no login.</small>
       <div class="form-actions profile-form-actions"><a class="btn ghost" href="{% url 'account' %}">Cancelar</a><button class="btn primary" type="submit"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Salvar alterações</button></div>
     </form>
   </section>

@@ -6,7 +6,7 @@
 
   const definitions = {
     users: [
-      { title: 'Identidade', description: 'Dados pessoais', fields: ['username', 'first_name', 'last_name', 'email'] },
+      { title: 'Identidade', description: 'Dados pessoais', fields: ['username', 'first_name', 'last_name', 'email', 'language', 'timezone'] },
       { title: 'Segurança', description: 'Credenciais e segundo fator', fields: ['password1', 'password2', 'new_password', 'new_password_confirmation', 'password', 'is_active', 'must_change_password', 'required_actions', 'reset_mfa'] },
       { title: 'Acessos', description: 'Grupos e roles', fields: ['groups', 'client_roles', 'direct_roles', 'roles', 'role_assignments'] },
       { title: 'Administração', description: 'Privilégios internos', fields: ['basic_access', 'is_staff', 'is_superuser', 'user_permissions', 'permissions'] }

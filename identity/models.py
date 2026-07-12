@@ -1,6 +1,7 @@
 import hashlib
 import secrets
 import uuid
+import zoneinfo
 from urllib.parse import urlsplit
 from django.conf import settings
 from django.contrib.auth.hashers import check_password, make_password
@@ -12,6 +13,11 @@ from django.utils import timezone
 
 def generate_client_id():
     return secrets.token_urlsafe(24)
+
+LANGUAGE_CHOICES = [("pt-BR", "Português (Brasil)"), ("en", "English"), ("es", "Español")]
+
+def timezone_choices():
+    return [(name, name) for name in sorted(zoneinfo.available_timezones())]
 
 
 class OIDCClient(models.Model):
@@ -240,6 +246,8 @@ class SecurityPolicy(models.Model):
     password_reset_resend_seconds = models.PositiveIntegerField(default=60, help_text="Segundos",validators=[MinValueValidator(10),MaxValueValidator(3600)])
     login_max_attempts = models.PositiveSmallIntegerField(default=5, help_text="Erros de senha consecutivos antes do bloqueio temporário",validators=[MinValueValidator(1),MaxValueValidator(50)])
     login_lockout_seconds = models.PositiveIntegerField(default=300, help_text="Segundos",validators=[MinValueValidator(30),MaxValueValidator(86400)])
+    default_language = models.CharField(max_length=16, choices=LANGUAGE_CHOICES, default="pt-BR")
+    default_timezone = models.CharField(max_length=64, choices=timezone_choices, default="America/Sao_Paulo")
 
     class Meta: verbose_name = "Política de segurança"
     @classmethod
@@ -334,6 +342,23 @@ class UserSecurityState(models.Model):
     failed_login_attempts=models.PositiveSmallIntegerField(default=0)
     login_locked_until=models.DateTimeField(null=True,blank=True)
     updated_at=models.DateTimeField(auto_now=True)
+
+
+class UserPreferences(models.Model):
+    """Preferências de localização por usuário; os valores iniciais vêm do SecurityPolicy."""
+
+    user=models.OneToOneField(User,on_delete=models.CASCADE,related_name="preferences")
+    language=models.CharField(max_length=16,choices=LANGUAGE_CHOICES,default="pt-BR")
+    timezone=models.CharField(max_length=64,choices=timezone_choices,default="America/Sao_Paulo")
+    updated_at=models.DateTimeField(auto_now=True)
+
+    class Meta: verbose_name="Preferências do usuário"
+
+    @classmethod
+    def for_user(cls,user):
+        policy=SecurityPolicy.load()
+        obj,_=cls.objects.get_or_create(user=user,defaults={"language":policy.default_language,"timezone":policy.default_timezone})
+        return obj
 
 
 class UserEmailState(models.Model):

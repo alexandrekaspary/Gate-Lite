@@ -8,13 +8,20 @@ from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 from .email_verification import EmailConfirmationError, EmailConfirmationThrottled, email_available_for_user, normalize_email, request_email_confirmation
-from .models import ClientRole, ClientScopeAssignment, ClientURI, ClientWebOrigin, EmailConfiguration, OIDCClient, OIDCScope, SecurityPolicy, UserEmailState, UserSecurityState, generate_client_id
+from .models import LANGUAGE_CHOICES, ClientRole, ClientScopeAssignment, ClientURI, ClientWebOrigin, EmailConfiguration, OIDCClient, OIDCScope, SecurityPolicy, UserEmailState, UserPreferences, UserSecurityState, generate_client_id, timezone_choices
 
 def grant_basic_permissions(user):
     user.user_permissions.add(*Permission.objects.filter(
         content_type__app_label="identity",
         codename__in=("view_own_profile", "change_own_password"),
     ))
+
+def user_preference_defaults(user):
+    """(language, timezone) do usuário, caindo nos padrões do sistema."""
+    preferences=UserPreferences.objects.filter(user=user).first() if user and user.pk else None
+    if preferences: return preferences.language, preferences.timezone
+    policy=SecurityPolicy.load()
+    return policy.default_language, policy.default_timezone
 
 class StyledFormMixin:
     def __init__(self, *args, **kwargs):
@@ -32,17 +39,28 @@ class StyledFormMixin:
 class UserCreateForm(StyledFormMixin, UserCreationForm):
     # password1/password2 adjacentes ocupam a mesma linha do grid de 2 colunas
     # no passo Segurança do wizard.
-    field_order = ("username","first_name","last_name","email","password1","password2","must_change_password","basic_access","groups","client_roles","is_active","is_staff","user_permissions")
+    field_order = ("username","first_name","last_name","email","language","timezone","password1","password2","must_change_password","basic_access","groups","client_roles","is_active","is_staff","user_permissions")
     basic_access = forms.CharField(required=False, disabled=True, initial="Perfil próprio e alteração da própria senha", label="Acesso básico")
     email = forms.EmailField(required=False)
+    language = forms.ChoiceField(choices=LANGUAGE_CHOICES, required=False, label="Idioma", help_text="Padrão definido nas configurações.")
+    timezone = forms.ChoiceField(choices=timezone_choices, required=False, label="Fuso horário", help_text="Padrão definido nas configurações.")
     must_change_password = forms.BooleanField(required=False, initial=True, label="Exigir troca de senha no próximo login", help_text="Acesso restrito até definir uma nova senha.")
     groups = forms.ModelMultipleChoiceField(Group.objects.all(), required=False)
     client_roles = forms.ModelMultipleChoiceField(ClientRole.objects.select_related("client").order_by("client__name","name"), required=False, label="Roles diretas de clients", help_text="Atribua somente exceções; prefira roles herdadas por grupos.")
     user_permissions = forms.ModelMultipleChoiceField(Permission.objects.select_related("content_type").exclude(content_type__app_label="identity", codename__in=("view_own_profile","change_own_password")), required=False, label="Permissões administrativas")
     class Meta(UserCreationForm.Meta):
-        fields = ("username", "first_name", "last_name", "email", "must_change_password", "basic_access", "groups", "client_roles", "is_active", "is_staff", "user_permissions")
+        fields = ("username", "first_name", "last_name", "email", "language", "timezone", "must_change_password", "basic_access", "groups", "client_roles", "is_active", "is_staff", "user_permissions")
         # Ajuda curta, em uma linha, no lugar dos textos longos padrão do Django.
         help_texts = {"is_active": "Desmarque para suspender a conta sem excluí-la.", "is_staff": "Permite acessar o Console admin."}
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        policy = SecurityPolicy.load()
+        self.fields["language"].initial = policy.default_language
+        self.fields["timezone"].initial = policy.default_timezone
+    def clean_language(self):
+        return self.cleaned_data.get("language") or SecurityPolicy.load().default_language
+    def clean_timezone(self):
+        return self.cleaned_data.get("timezone") or SecurityPolicy.load().default_timezone
     def clean_email(self):
         email=self.cleaned_data.get("email","").strip()
         if email and User.objects.filter(email__iexact=email).exists():
@@ -56,19 +74,22 @@ class UserCreateForm(StyledFormMixin, UserCreationForm):
             state, _ = UserSecurityState.objects.get_or_create(user=user)
             state.must_change_password = self.cleaned_data["must_change_password"]
             state.save(update_fields=["must_change_password", "updated_at"])
+            UserPreferences.objects.update_or_create(user=user, defaults={"language": self.cleaned_data["language"], "timezone": self.cleaned_data["timezone"]})
         return user
 
 class UserEditForm(StyledFormMixin, forms.ModelForm):
     basic_access = forms.CharField(required=False, disabled=True, initial="Perfil próprio e alteração da própria senha", label="Acesso básico")
     new_password = forms.CharField(required=False, widget=forms.PasswordInput(attrs={"autocomplete": "new-password"}), label="Nova senha", help_text="Deixe em branco para manter a senha atual.")
     new_password_confirmation = forms.CharField(required=False, widget=forms.PasswordInput(attrs={"autocomplete": "new-password"}), label="Confirme a nova senha")
+    language = forms.ChoiceField(choices=LANGUAGE_CHOICES, required=False, label="Idioma")
+    timezone = forms.ChoiceField(choices=timezone_choices, required=False, label="Fuso horário")
     must_change_password = forms.BooleanField(required=False, label="Exigir troca de senha no próximo login", help_text="Acesso restrito até definir uma nova senha.")
     user_permissions = forms.ModelMultipleChoiceField(Permission.objects.select_related("content_type").exclude(content_type__app_label="identity", codename__in=("view_own_profile","change_own_password")), required=False, label="Permissões administrativas")
     client_roles = forms.ModelMultipleChoiceField(ClientRole.objects.select_related("client").order_by("client__name","name"), required=False, label="Roles diretas de clients", help_text="Somadas às roles herdadas pelos grupos.")
     reset_mfa = forms.BooleanField(required=False,label="Redefinir 2FA",help_text="Remove o autenticador e códigos de recuperação.")
     class Meta:
         model = User
-        fields = ("username", "first_name", "last_name", "email", "new_password", "new_password_confirmation", "must_change_password", "basic_access", "groups", "client_roles", "is_active", "is_staff", "is_superuser", "user_permissions", "reset_mfa")
+        fields = ("username", "first_name", "last_name", "email", "language", "timezone", "new_password", "new_password_confirmation", "must_change_password", "basic_access", "groups", "client_roles", "is_active", "is_staff", "is_superuser", "user_permissions", "reset_mfa")
         widgets = {"groups": forms.SelectMultiple(), "user_permissions": forms.SelectMultiple()}
         # Ajuda curta, em uma linha, no lugar dos textos longos padrão do Django.
         help_texts = {"is_active": "Desmarque para suspender a conta sem excluí-la.", "is_staff": "Permite acessar o Console admin.", "is_superuser": "Concede todas as permissões automaticamente."}
@@ -80,6 +101,11 @@ class UserEditForm(StyledFormMixin, forms.ModelForm):
             self.fields["client_roles"].initial = self.instance.direct_oidc_client_roles.all()
             state, _ = UserSecurityState.objects.get_or_create(user=self.instance)
             self.fields["must_change_password"].initial = state.must_change_password
+            self.fields["language"].initial, self.fields["timezone"].initial = user_preference_defaults(self.instance)
+    def clean_language(self):
+        return self.cleaned_data.get("language") or user_preference_defaults(self.instance)[0]
+    def clean_timezone(self):
+        return self.cleaned_data.get("timezone") or user_preference_defaults(self.instance)[1]
     def clean_email(self):
         email=self.cleaned_data.get("email","").strip()
         if email and not email_available_for_user(email,self.instance):
@@ -117,6 +143,7 @@ class UserEditForm(StyledFormMixin, forms.ModelForm):
             user.set_password(self.cleaned_data["new_password"])
         if commit:
             user.save(); self.save_m2m(); grant_basic_permissions(user); user.direct_oidc_client_roles.set(self.cleaned_data["client_roles"])
+            UserPreferences.objects.update_or_create(user=user, defaults={"language": self.cleaned_data["language"], "timezone": self.cleaned_data["timezone"]})
             state, _ = UserSecurityState.objects.get_or_create(user=user)
             was_required = state.must_change_password
             state.must_change_password = self.cleaned_data["must_change_password"]
@@ -147,6 +174,8 @@ class UserEditForm(StyledFormMixin, forms.ModelForm):
 
 class AccountProfileForm(StyledFormMixin, forms.ModelForm):
     email=forms.EmailField(required=True,label="E-mail")
+    language=forms.ChoiceField(choices=LANGUAGE_CHOICES,required=False,label="Idioma")
+    timezone=forms.ChoiceField(choices=timezone_choices,required=False,label="Fuso horário")
 
     class Meta:
         model=User
@@ -157,6 +186,13 @@ class AccountProfileForm(StyledFormMixin, forms.ModelForm):
         instance=kwargs.get("instance")
         self._original_email=(instance.email if instance else "") or ""
         super().__init__(*args,**kwargs)
+        self.fields["language"].initial,self.fields["timezone"].initial=user_preference_defaults(self.instance)
+
+    def clean_language(self):
+        return self.cleaned_data.get("language") or user_preference_defaults(self.instance)[0]
+
+    def clean_timezone(self):
+        return self.cleaned_data.get("timezone") or user_preference_defaults(self.instance)[1]
 
     def clean_email(self):
         email=normalize_email(self.cleaned_data["email"])
@@ -171,6 +207,7 @@ class AccountProfileForm(StyledFormMixin, forms.ModelForm):
         user.email=self._original_email
         if commit:
             user.save(update_fields=["first_name","last_name"])
+            UserPreferences.objects.update_or_create(user=user,defaults={"language":self.cleaned_data["language"],"timezone":self.cleaned_data["timezone"]})
             state,_=UserEmailState.objects.get_or_create(user=user)
             current_verified=state.is_current_email_verified()
             if requested_email!=current_email or not current_verified:
@@ -341,8 +378,9 @@ class ClientRoleForm(StyledFormMixin, forms.ModelForm):
 class SecurityPolicyForm(StyledFormMixin, forms.ModelForm):
     class Meta:
         model = SecurityPolicy
-        fields = ("password_min_length","password_require_uppercase","password_require_lowercase","password_require_number","password_require_special","mfa_mode","access_token_ttl","id_token_ttl","refresh_token_ttl","sso_session_ttl","client_secret_grace_period","email_confirmation_timeout","email_confirmation_resend_seconds","password_reset_timeout","password_reset_resend_seconds","login_max_attempts","login_lockout_seconds")
-        labels = {"password_min_length":"Tamanho mínimo","password_require_uppercase":"Exigir letra maiúscula","password_require_lowercase":"Exigir letra minúscula","password_require_number":"Exigir número","password_require_special":"Exigir caractere especial","mfa_mode":"Política de autenticação em dois fatores","access_token_ttl":"Validade do access token","id_token_ttl":"Validade do ID token","refresh_token_ttl":"Validade máxima do refresh token","sso_session_ttl":"Validade da sessão SSO","client_secret_grace_period":"Sobreposição de secrets na rotação","email_confirmation_timeout":"Validade da confirmação de e-mail","email_confirmation_resend_seconds":"Intervalo mínimo de reenvio","password_reset_timeout":"Validade da recuperação de senha","password_reset_resend_seconds":"Intervalo mínimo entre recuperações","login_max_attempts":"Tentativas de senha antes do bloqueio","login_lockout_seconds":"Duração do bloqueio de login"}
+        fields = ("password_min_length","password_require_uppercase","password_require_lowercase","password_require_number","password_require_special","mfa_mode","access_token_ttl","id_token_ttl","refresh_token_ttl","sso_session_ttl","client_secret_grace_period","email_confirmation_timeout","email_confirmation_resend_seconds","password_reset_timeout","password_reset_resend_seconds","login_max_attempts","login_lockout_seconds","default_language","default_timezone")
+        labels = {"password_min_length":"Tamanho mínimo","password_require_uppercase":"Exigir letra maiúscula","password_require_lowercase":"Exigir letra minúscula","password_require_number":"Exigir número","password_require_special":"Exigir caractere especial","mfa_mode":"Política de autenticação em dois fatores","access_token_ttl":"Validade do access token","id_token_ttl":"Validade do ID token","refresh_token_ttl":"Validade máxima do refresh token","sso_session_ttl":"Validade da sessão SSO","client_secret_grace_period":"Sobreposição de secrets na rotação","email_confirmation_timeout":"Validade da confirmação de e-mail","email_confirmation_resend_seconds":"Intervalo mínimo de reenvio","password_reset_timeout":"Validade da recuperação de senha","password_reset_resend_seconds":"Intervalo mínimo entre recuperações","login_max_attempts":"Tentativas de senha antes do bloqueio","login_lockout_seconds":"Duração do bloqueio de login","default_language":"Idioma padrão","default_timezone":"Fuso horário padrão"}
+        help_texts = {"default_language":"Pré-selecionado ao cadastrar novos usuários.","default_timezone":"Pré-selecionado ao cadastrar novos usuários."}
 
 
 class EmailConfigurationForm(StyledFormMixin, forms.ModelForm):
