@@ -1,0 +1,238 @@
+# GateLite — traduções em inglês.
+# As chaves (msgid) são os textos-fonte em português (pt-BR).
+msgid ""
+msgstr ""
+"Project-Id-Version: GateLite\n"
+"Report-Msgid-Bugs-To: \n"
+"Language: en\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: templates/account/base.html
+msgid "Minha conta"
+msgstr "My account"
+
+msgid "Ir para o conteúdo principal"
+msgstr "Skip to main content"
+
+msgid "Navegação da conta"
+msgstr "Account navigation"
+
+msgid "Conectado como"
+msgstr "Signed in as"
+
+msgid "Sair"
+msgstr "Sign out"
+
+msgid "Fechar aviso"
+msgstr "Dismiss notice"
+
+#: templates/account/profile.html
+msgid "Autosserviço"
+msgstr "Self-service"
+
+#, python-format
+msgid "Olá, %(name)s"
+msgstr "Hello, %(name)s"
+
+msgid "Consulte seus acessos e mantenha sua conta protegida."
+msgstr "Review your access and keep your account protected."
+
+msgid "Identidade"
+msgstr "Identity"
+
+msgid "Dados do perfil"
+msgstr "Profile details"
+
+msgid "Usuário"
+msgstr "Username"
+
+msgid "Nome completo"
+msgstr "Full name"
+
+msgid "Não informado"
+msgstr "Not provided"
+
+msgid "E-mail"
+msgstr "Email"
+
+msgid "Alteração pendente"
+msgstr "Change pending"
+
+msgid "Confirmado"
+msgstr "Verified"
+
+msgid "Não confirmado"
+msgstr "Not verified"
+
+msgid "Status da conta"
+msgstr "Account status"
+
+msgid "Ativa"
+msgstr "Active"
+
+msgid "Editar dados"
+msgstr "Edit details"
+
+msgid "Segurança"
+msgstr "Security"
+
+msgid "Proteção da conta"
+msgstr "Account protection"
+
+msgid "Gerencie sua senha e adicione uma segunda etapa de verificação ao login."
+msgstr "Manage your password and add a second verification step at sign-in."
+
+msgid "Senha configurada"
+msgstr "Password set"
+
+msgid "Sua senha segue a política da organização."
+msgstr "Your password follows the organization's policy."
+
+msgid "Alterar senha"
+msgstr "Change password"
+
+msgid "Autenticação em duas etapas"
+msgstr "Two-factor authentication"
+
+msgid "Acessos"
+msgstr "Access"
+
+msgid "Grupos vinculados"
+msgstr "Linked groups"
+
+msgid "Seus grupos determinam os acessos e as roles herdadas nas aplicações."
+msgstr "Your groups determine your access and the roles inherited in applications."
+
+msgid "Nenhum grupo vinculado"
+msgstr "No linked groups"
+
+msgid "Entre em contato com um administrador se precisar de acesso a uma aplicação."
+msgstr "Contact an administrator if you need access to an application."
+
+msgid "Sessões de aplicações"
+msgstr "Application sessions"
+
+msgid "Encerre acessos OIDC que você não reconhece."
+msgstr "End OIDC sessions you do not recognize."
+
+#, python-format
+msgid "Audience: %(audience)s · iniciada em %(time)s"
+msgstr "Audience: %(audience)s · started on %(time)s"
+
+msgid "Encerrar"
+msgstr "End session"
+
+msgid "Nenhuma sessão OIDC ativa"
+msgstr "No active OIDC sessions"
+
+msgid "Novos logins em aplicações aparecerão aqui."
+msgstr "New sign-ins to applications will appear here."
+
+#: templates/account/profile_edit.html
+msgid "Editar perfil"
+msgstr "Edit profile"
+
+msgid "Editar dados pessoais"
+msgstr "Edit personal details"
+
+msgid "Atualize seu nome, idioma, fuso horário e o endereço usado para comunicações de segurança."
+msgstr "Update your name, language, time zone and the address used for security communications."
+
+msgid "Dados pessoais"
+msgstr "Personal details"
+
+msgid "Informações do perfil"
+msgstr "Profile information"
+
+msgid "Seu nome pode ser exibido nas aplicações conectadas."
+msgstr "Your name may be shown in connected applications."
+
+msgid "Não foi possível salvar"
+msgstr "Could not save"
+
+msgid "O identificador de usuário é permanente e não pode ser alterado."
+msgstr "The username is permanent and cannot be changed."
+
+msgid "Nome"
+msgstr "First name"
+
+msgid "Sobrenome"
+msgstr "Last name"
+
+msgid "Ao informar um novo endereço, enviaremos um link de confirmação antes de ativá-lo."
+msgstr "When you enter a new address, we will send a confirmation link before activating it."
+
+msgid "Idioma"
+msgstr "Language"
+
+msgid "Fuso horário"
+msgstr "Time zone"
+
+msgid "Aplicações conectadas recebem seu idioma e fuso horário no login."
+msgstr "Connected applications receive your language and time zone at sign-in."
+
+msgid "Cancelar"
+msgstr "Cancel"
+
+msgid "Salvar alterações"
+msgstr "Save changes"
+
+msgid "Validação"
+msgstr "Validation"
+
+msgid "Status do e-mail"
+msgstr "Email status"
+
+msgid "Confirmação pendente"
+msgstr "Confirmation pending"
+
+#, python-format
+msgid "Enviamos um link para <strong>%(pending_email)s</strong>. O endereço atual permanece ativo até a confirmação."
+msgstr "We sent a link to <strong>%(pending_email)s</strong>. The current address remains active until confirmation."
+
+msgid "Reenviar confirmação"
+msgstr "Resend confirmation"
+
+msgid "Endereço confirmado"
+msgstr "Address verified"
+
+msgid "Seu endereço atual já foi validado e pode ser usado para recuperar o acesso."
+msgstr "Your current address has been verified and can be used to recover access."
+
+msgid "Endereço não confirmado"
+msgstr "Address not verified"
+
+msgid "Salve um endereço válido para receber o link de confirmação e habilitar a recuperação de senha."
+msgstr "Save a valid address to receive the confirmation link and enable password recovery."
+
+msgid "Por que confirmar?"
+msgstr "Why confirm?"
+
+msgid "Impede que outra pessoa cadastre um endereço que não controla."
+msgstr "Prevents someone else from registering an address they do not control."
+
+msgid "Protege o fluxo de recuperação de senha."
+msgstr "Protects the password recovery flow."
+
+msgid "Mantém as notificações de segurança no endereço correto."
+msgstr "Keeps security notifications at the correct address."
+
+#: identity/views.py identity/forms.py
+#, python-format
+msgid "Uma confirmação já foi enviada. Aguarde %(seconds)s segundos para reenviar."
+msgstr "A confirmation has already been sent. Wait %(seconds)s seconds to resend."
+
+msgid "Este endereço de e-mail já está em uso."
+msgstr "This email address is already in use."
+
+msgid "Não foi possível enviar a confirmação agora. Seus dados de nome foram salvos; tente reenviar em instantes."
+msgstr "We could not send the confirmation right now. Your name details were saved; try resending shortly."
+
+msgid "Dados salvos. Enviamos uma confirmação para o novo e-mail; o endereço atual permanece ativo até a confirmação."
+msgstr "Details saved. We sent a confirmation to the new email; the current address remains active until confirmation."
+
+msgid "Dados do perfil atualizados."
+msgstr "Profile details updated."

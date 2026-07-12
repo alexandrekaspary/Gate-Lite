@@ -5,13 +5,16 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
+RUN apt-get update && apt-get install -y --no-install-recommends gettext && rm -rf /var/lib/apt/lists/*
+
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
 # collectstatic não precisa dos segredos reais; usa valores de build descartáveis.
-RUN DJANGO_SECRET_KEY=build-only DJANGO_DEBUG=1 python manage.py collectstatic --noinput
+RUN DJANGO_SECRET_KEY=build-only DJANGO_DEBUG=1 python manage.py collectstatic --noinput \
+    && DJANGO_SECRET_KEY=build-only DJANGO_DEBUG=1 python manage.py compilemessages
 
 RUN chmod +x docker-entrypoint.sh && useradd --create-home --uid 1000 gatelite && chown -R gatelite:gatelite /app
 USER gatelite

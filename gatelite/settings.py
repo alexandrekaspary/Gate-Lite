@@ -52,7 +52,7 @@ MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware", "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware", "django.middleware.csrf.CsrfViewMiddleware",
     "identity.middleware.OIDCCORSMiddleware",
-    "django.contrib.auth.middleware.AuthenticationMiddleware", "identity.middleware.PasswordChangeRequiredMiddleware", "identity.middleware.MFAEnforcementMiddleware", "django.contrib.messages.middleware.MessageMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware", "identity.middleware.UserLocaleMiddleware", "identity.middleware.PasswordChangeRequiredMiddleware", "identity.middleware.MFAEnforcementMiddleware", "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 ROOT_URLCONF = "gatelite.urls"
@@ -61,7 +61,7 @@ TEMPLATES = [{
     "DIRS": [BASE_DIR / "templates"], "APP_DIRS": True,
     "OPTIONS": {"context_processors": [
         "django.template.context_processors.request", "django.contrib.auth.context_processors.auth",
-        "django.contrib.messages.context_processors.messages",
+        "django.contrib.messages.context_processors.messages", "django.template.context_processors.i18n",
     ]},
 }]
 WSGI_APPLICATION = "gatelite.wsgi.application"
@@ -89,6 +89,8 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 LANGUAGE_CODE = "pt-br"
+LANGUAGES = [("pt-br", "Português (Brasil)"), ("en", "English"), ("es", "Español")]
+LOCALE_PATHS = [BASE_DIR / "locale"]
 TIME_ZONE = "America/Sao_Paulo"
 USE_I18N = True
 USE_TZ = True

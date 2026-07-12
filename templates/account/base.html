@@ -1,30 +1,30 @@
-{% load static %}
+{% load static i18n %}
 <!doctype html>
-<html lang="pt-br">
+<html lang="{{ LANGUAGE_CODE }}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light">
   <meta name="theme-color" content="#0a0a0a">
-  <title>{% block title %}Minha conta · GateLite{% endblock %}</title>
+  <title>{% block title %}{% trans "Minha conta" %} · GateLite{% endblock %}</title>
   <link rel="icon" type="image/svg+xml" href="{% static 'img/favicon.svg' %}">
   <link rel="stylesheet" href="{% static 'css/app.css' %}">
   <link rel="stylesheet" href="{% static 'css/account.css' %}">
 </head>
 <body class="account-page">
-  <a class="skip-link" href="#account-content">Ir para o conteúdo principal</a>
+  <a class="skip-link" href="#account-content">{% trans "Ir para o conteúdo principal" %}</a>
   <header class="account-topbar">
     <div class="account-topbar-inner">
       <a class="brand account-brand" href="{% url 'account' %}">
         <img class="brand-mark" src="{% static 'img/gatelite-mark.svg' %}" alt="" width="34" height="34">
-        <span class="brand-copy"><strong>GateLite</strong><small>Minha conta</small></span>
+        <span class="brand-copy"><strong>GateLite</strong><small>{% trans "Minha conta" %}</small></span>
       </a>
-      <nav class="account-nav" aria-label="Navegação da conta">
+      <nav class="account-nav" aria-label="{% trans 'Navegação da conta' %}">
         {% if perms.identity.view_identity_console %}
         <a class="btn ghost" href="{% url 'console:dashboard' %}"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 13h6V4H4v9Zm0 7h6v-4H4v4Zm10 0h6v-9h-6v9Zm0-16v4h6V4h-6Z"/></svg>Console</a>
         {% endif %}
-        <span class="account-user"><i>{{ request.user.username|slice:':1'|upper }}</i><span><small>Conectado como</small><strong>{{ request.user.username }}</strong></span></span>
-        <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="btn ghost" type="submit"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M10 17l5-5-5-5M15 12H3M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/></svg>Sair</button></form>
+        <span class="account-user"><i>{{ request.user.username|slice:':1'|upper }}</i><span><small>{% trans "Conectado como" %}</small><strong>{{ request.user.username }}</strong></span></span>
+        <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="btn ghost" type="submit"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M10 17l5-5-5-5M15 12H3M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/></svg>{% trans "Sair" %}</button></form>
       </nav>
     </div>
   </header>
@@ -32,7 +32,7 @@
   <main class="account-main" id="account-content" tabindex="-1">
     {% if messages %}
     <div class="message-stack" aria-live="polite">
-      {% for message in messages %}<div class="alert {{ message.tags|default:'info' }}" role="status"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20ZM12 8v4M12 16h.01"/></svg><span>{{ message }}</span><button class="alert-close" type="button" aria-label="Fechar aviso">×</button></div>{% endfor %}
+      {% for message in messages %}<div class="alert {{ message.tags|default:'info' }}" role="status"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20ZM12 8v4M12 16h.01"/></svg><span>{{ message }}</span><button class="alert-close" type="button" aria-label="{% trans 'Fechar aviso' %}">×</button></div>{% endfor %}
     </div>
     {% endif %}
     {% block content %}{% endblock %}

@@ -16,6 +16,7 @@ from django.contrib.auth.models import Group, Permission, User
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.utils.crypto import constant_time_compare
 from django.utils.http import base36_to_int
+from django.utils.translation import gettext as _
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
 from django.db import transaction
@@ -316,17 +317,17 @@ def account_profile_edit(request):
         try:
             form.save(request=request)
         except EmailConfirmationThrottled as exc:
-            messages.info(request,f"Uma confirmação já foi enviada. Aguarde {exc.retry_after} segundos para reenviar.")
+            messages.info(request,_("Uma confirmação já foi enviada. Aguarde %(seconds)s segundos para reenviar.")%{"seconds":exc.retry_after})
         except EmailAlreadyInUse:
-            form.add_error("email","Este endereço de e-mail já está em uso.")
+            form.add_error("email",_("Este endereço de e-mail já está em uso."))
         except Exception:
-            form.add_error("email","Não foi possível enviar a confirmação agora. Seus dados de nome foram salvos; tente reenviar em instantes.")
+            form.add_error("email",_("Não foi possível enviar a confirmação agora. Seus dados de nome foram salvos; tente reenviar em instantes."))
         else:
             audit(request,"profile.updated",request.user,{"email_confirmation_requested":bool(form.confirmation)})
             if form.confirmation:
-                messages.success(request,"Dados salvos. Enviamos uma confirmação para o novo e-mail; o endereço atual permanece ativo até a confirmação.")
+                messages.success(request,_("Dados salvos. Enviamos uma confirmação para o novo e-mail; o endereço atual permanece ativo até a confirmação."))
             else:
-                messages.success(request,"Dados do perfil atualizados.")
+                messages.success(request,_("Dados do perfil atualizados."))
             return redirect("account")
         if not form.errors:
             return redirect("account-profile-edit")

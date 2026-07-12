@@ -1,11 +1,37 @@
 from django.http import HttpResponse
 from django.utils.cache import patch_vary_headers
 import base64
+import zoneinfo
 import jwt
 from django.shortcuts import redirect
 from django.urls import reverse
-from django.utils import timezone
+from django.utils import timezone, translation
 from urllib.parse import urlencode
+
+class UserLocaleMiddleware:
+    """Ativa idioma e fuso horário da preferência do usuário; anônimos usam o padrão do sistema."""
+    def __init__(self,get_response): self.get_response=get_response
+    def __call__(self,request):
+        if request.path.startswith("/static/"): return self.get_response(request)
+        from django.conf import settings
+        from .models import SecurityPolicy, UserPreferences
+        language,tz_name=settings.LANGUAGE_CODE,settings.TIME_ZONE
+        try:
+            user=getattr(request,"user",None)
+            preferences=UserPreferences.objects.filter(user=user).first() if user and user.is_authenticated else None
+            if preferences: language,tz_name=preferences.language,preferences.timezone
+            else:
+                policy=SecurityPolicy.load(); language,tz_name=policy.default_language,policy.default_timezone
+        except Exception: pass  # Sem banco disponível: mantém os padrões do settings.
+        translation.activate(language.lower())
+        request.LANGUAGE_CODE=translation.get_language()
+        try: timezone.activate(zoneinfo.ZoneInfo(tz_name))
+        except (zoneinfo.ZoneInfoNotFoundError,ValueError): timezone.deactivate()
+        response=self.get_response(request)
+        response.headers.setdefault("Content-Language",request.LANGUAGE_CODE)
+        # O idioma depende da sessão do usuário, não do header Accept-Language.
+        patch_vary_headers(response,["Cookie"])
+        return response
 
 class PasswordChangeRequiredMiddleware:
     def __init__(self,get_response): self.get_response=get_response

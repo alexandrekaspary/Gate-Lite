@@ -7,6 +7,7 @@ from django.contrib.auth.models import Group, Permission, User
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
 from .email_verification import EmailConfirmationError, EmailConfirmationThrottled, email_available_for_user, normalize_email, request_email_confirmation
 from .models import LANGUAGE_CHOICES, ClientRole, ClientScopeAssignment, ClientURI, ClientWebOrigin, EmailConfiguration, OIDCClient, OIDCScope, SecurityPolicy, UserEmailState, UserPreferences, UserSecurityState, generate_client_id, timezone_choices
 
@@ -173,14 +174,14 @@ class UserEditForm(StyledFormMixin, forms.ModelForm):
 
 
 class AccountProfileForm(StyledFormMixin, forms.ModelForm):
-    email=forms.EmailField(required=True,label="E-mail")
-    language=forms.ChoiceField(choices=LANGUAGE_CHOICES,required=False,label="Idioma")
-    timezone=forms.ChoiceField(choices=timezone_choices,required=False,label="Fuso horário")
+    email=forms.EmailField(required=True,label=_("E-mail"))
+    language=forms.ChoiceField(choices=LANGUAGE_CHOICES,required=False,label=_("Idioma"))
+    timezone=forms.ChoiceField(choices=timezone_choices,required=False,label=_("Fuso horário"))
 
     class Meta:
         model=User
         fields=("first_name","last_name","email")
-        labels={"first_name":"Nome","last_name":"Sobrenome"}
+        labels={"first_name":_("Nome"),"last_name":_("Sobrenome")}
 
     def __init__(self,*args,**kwargs):
         instance=kwargs.get("instance")
@@ -197,7 +198,7 @@ class AccountProfileForm(StyledFormMixin, forms.ModelForm):
     def clean_email(self):
         email=normalize_email(self.cleaned_data["email"])
         if not email_available_for_user(email,self.instance):
-            raise forms.ValidationError("Este endereço de e-mail já está em uso.")
+            raise forms.ValidationError(_("Este endereço de e-mail já está em uso."))
         return email
 
     def save(self, commit=True, request=None):

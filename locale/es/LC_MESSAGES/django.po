@@ -1,0 +1,238 @@
+# GateLite — traduções em espanhol.
+# As chaves (msgid) são os textos-fonte em português (pt-BR).
+msgid ""
+msgstr ""
+"Project-Id-Version: GateLite\n"
+"Report-Msgid-Bugs-To: \n"
+"Language: es\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: templates/account/base.html
+msgid "Minha conta"
+msgstr "Mi cuenta"
+
+msgid "Ir para o conteúdo principal"
+msgstr "Ir al contenido principal"
+
+msgid "Navegação da conta"
+msgstr "Navegación de la cuenta"
+
+msgid "Conectado como"
+msgstr "Conectado como"
+
+msgid "Sair"
+msgstr "Salir"
+
+msgid "Fechar aviso"
+msgstr "Cerrar aviso"
+
+#: templates/account/profile.html
+msgid "Autosserviço"
+msgstr "Autoservicio"
+
+#, python-format
+msgid "Olá, %(name)s"
+msgstr "Hola, %(name)s"
+
+msgid "Consulte seus acessos e mantenha sua conta protegida."
+msgstr "Consulta tus accesos y mantén tu cuenta protegida."
+
+msgid "Identidade"
+msgstr "Identidad"
+
+msgid "Dados do perfil"
+msgstr "Datos del perfil"
+
+msgid "Usuário"
+msgstr "Usuario"
+
+msgid "Nome completo"
+msgstr "Nombre completo"
+
+msgid "Não informado"
+msgstr "No informado"
+
+msgid "E-mail"
+msgstr "Correo electrónico"
+
+msgid "Alteração pendente"
+msgstr "Cambio pendiente"
+
+msgid "Confirmado"
+msgstr "Confirmado"
+
+msgid "Não confirmado"
+msgstr "No confirmado"
+
+msgid "Status da conta"
+msgstr "Estado de la cuenta"
+
+msgid "Ativa"
+msgstr "Activa"
+
+msgid "Editar dados"
+msgstr "Editar datos"
+
+msgid "Segurança"
+msgstr "Seguridad"
+
+msgid "Proteção da conta"
+msgstr "Protección de la cuenta"
+
+msgid "Gerencie sua senha e adicione uma segunda etapa de verificação ao login."
+msgstr "Gestiona tu contraseña y añade un segundo paso de verificación al iniciar sesión."
+
+msgid "Senha configurada"
+msgstr "Contraseña configurada"
+
+msgid "Sua senha segue a política da organização."
+msgstr "Tu contraseña sigue la política de la organización."
+
+msgid "Alterar senha"
+msgstr "Cambiar contraseña"
+
+msgid "Autenticação em duas etapas"
+msgstr "Autenticación en dos pasos"
+
+msgid "Acessos"
+msgstr "Accesos"
+
+msgid "Grupos vinculados"
+msgstr "Grupos vinculados"
+
+msgid "Seus grupos determinam os acessos e as roles herdadas nas aplicações."
+msgstr "Tus grupos determinan los accesos y los roles heredados en las aplicaciones."
+
+msgid "Nenhum grupo vinculado"
+msgstr "Ningún grupo vinculado"
+
+msgid "Entre em contato com um administrador se precisar de acesso a uma aplicação."
+msgstr "Contacta a un administrador si necesitas acceso a una aplicación."
+
+msgid "Sessões de aplicações"
+msgstr "Sesiones de aplicaciones"
+
+msgid "Encerre acessos OIDC que você não reconhece."
+msgstr "Cierra accesos OIDC que no reconozcas."
+
+#, python-format
+msgid "Audience: %(audience)s · iniciada em %(time)s"
+msgstr "Audience: %(audience)s · iniciada el %(time)s"
+
+msgid "Encerrar"
+msgstr "Finalizar"
+
+msgid "Nenhuma sessão OIDC ativa"
+msgstr "Ninguna sesión OIDC activa"
+
+msgid "Novos logins em aplicações aparecerão aqui."
+msgstr "Los nuevos inicios de sesión en aplicaciones aparecerán aquí."
+
+#: templates/account/profile_edit.html
+msgid "Editar perfil"
+msgstr "Editar perfil"
+
+msgid "Editar dados pessoais"
+msgstr "Editar datos personales"
+
+msgid "Atualize seu nome, idioma, fuso horário e o endereço usado para comunicações de segurança."
+msgstr "Actualiza tu nombre, idioma, zona horaria y la dirección usada para comunicaciones de seguridad."
+
+msgid "Dados pessoais"
+msgstr "Datos personales"
+
+msgid "Informações do perfil"
+msgstr "Información del perfil"
+
+msgid "Seu nome pode ser exibido nas aplicações conectadas."
+msgstr "Tu nombre puede mostrarse en las aplicaciones conectadas."
+
+msgid "Não foi possível salvar"
+msgstr "No se pudo guardar"
+
+msgid "O identificador de usuário é permanente e não pode ser alterado."
+msgstr "El identificador de usuario es permanente y no se puede cambiar."
+
+msgid "Nome"
+msgstr "Nombre"
+
+msgid "Sobrenome"
+msgstr "Apellido"
+
+msgid "Ao informar um novo endereço, enviaremos um link de confirmação antes de ativá-lo."
+msgstr "Al indicar una nueva dirección, enviaremos un enlace de confirmación antes de activarla."
+
+msgid "Idioma"
+msgstr "Idioma"
+
+msgid "Fuso horário"
+msgstr "Zona horaria"
+
+msgid "Aplicações conectadas recebem seu idioma e fuso horário no login."
+msgstr "Las aplicaciones conectadas reciben tu idioma y zona horaria al iniciar sesión."
+
+msgid "Cancelar"
+msgstr "Cancelar"
+
+msgid "Salvar alterações"
+msgstr "Guardar cambios"
+
+msgid "Validação"
+msgstr "Validación"
+
+msgid "Status do e-mail"
+msgstr "Estado del correo"
+
+msgid "Confirmação pendente"
+msgstr "Confirmación pendiente"
+
+#, python-format
+msgid "Enviamos um link para <strong>%(pending_email)s</strong>. O endereço atual permanece ativo até a confirmação."
+msgstr "Enviamos un enlace a <strong>%(pending_email)s</strong>. La dirección actual permanece activa hasta la confirmación."
+
+msgid "Reenviar confirmação"
+msgstr "Reenviar confirmación"
+
+msgid "Endereço confirmado"
+msgstr "Dirección confirmada"
+
+msgid "Seu endereço atual já foi validado e pode ser usado para recuperar o acesso."
+msgstr "Tu dirección actual ya fue validada y puede usarse para recuperar el acceso."
+
+msgid "Endereço não confirmado"
+msgstr "Dirección no confirmada"
+
+msgid "Salve um endereço válido para receber o link de confirmação e habilitar a recuperação de senha."
+msgstr "Guarda una dirección válida para recibir el enlace de confirmación y habilitar la recuperación de contraseña."
+
+msgid "Por que confirmar?"
+msgstr "¿Por qué confirmar?"
+
+msgid "Impede que outra pessoa cadastre um endereço que não controla."
+msgstr "Impide que otra persona registre una dirección que no controla."
+
+msgid "Protege o fluxo de recuperação de senha."
+msgstr "Protege el flujo de recuperación de contraseña."
+
+msgid "Mantém as notificações de segurança no endereço correto."
+msgstr "Mantiene las notificaciones de seguridad en la dirección correcta."
+
+#: identity/views.py identity/forms.py
+#, python-format
+msgid "Uma confirmação já foi enviada. Aguarde %(seconds)s segundos para reenviar."
+msgstr "Ya se envió una confirmación. Espera %(seconds)s segundos para reenviar."
+
+msgid "Este endereço de e-mail já está em uso."
+msgstr "Esta dirección de correo ya está en uso."
+
+msgid "Não foi possível enviar a confirmação agora. Seus dados de nome foram salvos; tente reenviar em instantes."
+msgstr "No pudimos enviar la confirmación ahora. Tus datos de nombre se guardaron; intenta reenviar en unos instantes."
+
+msgid "Dados salvos. Enviamos uma confirmação para o novo e-mail; o endereço atual permanece ativo até a confirmação."
+msgstr "Datos guardados. Enviamos una confirmación al nuevo correo; la dirección actual permanece activa hasta la confirmación."
+
+msgid "Dados do perfil atualizados."
+msgstr "Datos del perfil actualizados."
