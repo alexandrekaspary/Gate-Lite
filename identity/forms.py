@@ -8,7 +8,7 @@ from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 from .email_verification import EmailConfirmationError, EmailConfirmationThrottled, email_available_for_user, normalize_email, request_email_confirmation
-from .models import ClientRole, ClientScopeAssignment, ClientURI, ClientWebOrigin, EmailConfiguration, OIDCClient, OIDCScope, SecurityPolicy, UserEmailState, UserSecurityState
+from .models import ClientRole, ClientScopeAssignment, ClientURI, ClientWebOrigin, EmailConfiguration, OIDCClient, OIDCScope, SecurityPolicy, UserEmailState, UserSecurityState, generate_client_id
 
 def grant_basic_permissions(user):
     user.user_permissions.add(*Permission.objects.filter(
@@ -247,9 +247,15 @@ class ClientForm(StyledFormMixin, forms.ModelForm):
     class Meta:
         model = OIDCClient
         fields = ("name","client_id","application_type","client_type","token_endpoint_auth_method","authorization_code_enabled","refresh_token_enabled","client_credentials_enabled","require_pkce","require_mfa","allowed_audiences","access_policy","allowed_groups","allowed_users","is_active")
+        labels = {"authorization_code_enabled":"Authorization Code","refresh_token_enabled":"Refresh Token","client_credentials_enabled":"Client Credentials","require_pkce":"Exigir PKCE"}
+        help_texts = {"authorization_code_enabled":"Login interativo de usuários pelo navegador.","refresh_token_enabled":"Permite renovar tokens sem novo login.","client_credentials_enabled":"Emite tokens de service account, sem usuário.","require_pkce":"Sempre ativo em clients públicos."}
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs)
         self.fields["generate_secret"].initial=not bool(self.instance.pk)
+        if not self.instance.pk:
+            self.initial["client_id"]=""
+            self.fields["client_id"].required=False
+            self.fields["client_id"].help_text="Deixe em branco para gerar um identificador aleatório."
         if self.instance.pk:
             self.fields["redirect_uris"].initial="\n".join(self.instance.uri_list())
             self.fields["post_logout_redirect_uris"].initial="\n".join(self.instance.uri_list("post_logout_redirect_uris"))
@@ -257,6 +263,8 @@ class ClientForm(StyledFormMixin, forms.ModelForm):
             self.fields["scopes"].initial=" ".join(self.instance.scope_names())
     @staticmethod
     def _lines(value): return list(dict.fromkeys(line.strip() for line in value.splitlines() if line.strip()))
+    def clean_client_id(self):
+        return self.cleaned_data.get("client_id","").strip() or generate_client_id()
     def _validate_uri(self,value,origin=False):
         parsed=urlsplit(value)
         if not parsed.scheme or parsed.fragment or parsed.username or parsed.password: raise forms.ValidationError("URI absoluta inválida; fragmentos e credenciais não são permitidos.")
