@@ -102,6 +102,49 @@ if claims.get("acr") != "urn:gatelite:acr:2":
 
 Valide **no mínimo** assinatura, algoritmo, `iss`, `exp`, `aud` e `token_use`. Use `azp` para restringir qual client pode chamar a API.
 
+## Exemplo de payload
+
+Access token emitido para o usuário `42` no cenário SPA acima — client `portal-web` pedindo a audience `portal-api`, após login com senha e segundo fator:
+
+```json
+{
+  "iss": "https://auth.example.com",
+  "sub": "42",
+  "aud": "portal-api",
+  "azp": "portal-web",
+  "jti": "wJ4jRkD0m3H8vX2sLq9TzA1c",
+  "iat": 1767100000,
+  "exp": 1767100300,
+  "scope": "openid profile email groups offline_access",
+  "token_use": "access",
+  "roles": ["reader", "editor"],
+  "resource_access": { "portal-api": { "roles": ["reader", "editor"] } },
+  "sid": "0b6c9f1e-4b7d-4a54-9d2c-8f5e6a7b3c21",
+  "auth_time": 1767099980,
+  "amr": ["pwd", "otp"],
+  "acr": "urn:gatelite:acr:2"
+}
+```
+
+O header traz `{"alg": "RS256", "kid": "..."}` — use o `kid` para escolher a chave no JWKS. No **ID token**, `token_use` é `"id"`, o `aud` é o próprio client (`portal-web`), as roles são as do client e entram os claims do usuário conforme os scopes:
+
+```json
+{
+  "token_use": "id",
+  "aud": "portal-web",
+  "preferred_username": "ana.souza",
+  "name": "Ana Souza",
+  "given_name": "Ana",
+  "family_name": "Souza",
+  "email": "ana.souza@example.com",
+  "email_verified": true,
+  "groups": ["financeiro"],
+  "nonce": "b52c4a8e-..."
+}
+```
+
+Em tokens de Client Credentials não há sessão: saem `sub: "client:worker-service"`, `amr: ["client_secret"]`, `acr: "urn:gatelite:acr:client"`, sem `sid` nem `auth_time`.
+
 ## Claims principais
 
 | Claim | Conteúdo |
