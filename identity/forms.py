@@ -42,7 +42,7 @@ class UserCreateForm(StyledFormMixin, UserCreationForm):
     class Meta(UserCreationForm.Meta):
         fields = ("username", "first_name", "last_name", "email", "must_change_password", "basic_access", "groups", "client_roles", "is_active", "is_staff", "user_permissions")
         # Ajuda curta, em uma linha, no lugar dos textos longos padrão do Django.
-        help_texts = {"is_active": "Desmarque para suspender a conta sem excluí-la.", "is_staff": "Permite acessar o admin interno do Django."}
+        help_texts = {"is_active": "Desmarque para suspender a conta sem excluí-la.", "is_staff": "Permite acessar o Console admin."}
     def clean_email(self):
         email=self.cleaned_data.get("email","").strip()
         if email and User.objects.filter(email__iexact=email).exists():
@@ -71,7 +71,7 @@ class UserEditForm(StyledFormMixin, forms.ModelForm):
         fields = ("username", "first_name", "last_name", "email", "new_password", "new_password_confirmation", "must_change_password", "basic_access", "groups", "client_roles", "is_active", "is_staff", "is_superuser", "user_permissions", "reset_mfa")
         widgets = {"groups": forms.SelectMultiple(), "user_permissions": forms.SelectMultiple()}
         # Ajuda curta, em uma linha, no lugar dos textos longos padrão do Django.
-        help_texts = {"is_active": "Desmarque para suspender a conta sem excluí-la.", "is_staff": "Permite acessar o admin interno do Django.", "is_superuser": "Concede todas as permissões automaticamente."}
+        help_texts = {"is_active": "Desmarque para suspender a conta sem excluí-la.", "is_staff": "Permite acessar o Console admin.", "is_superuser": "Concede todas as permissões automaticamente."}
     def __init__(self, *args, **kwargs):
         instance=kwargs.get("instance")
         self._original_email=(instance.email if instance else "") or ""
