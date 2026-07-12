@@ -1411,7 +1411,11 @@ class MFALoginTests(MFATestMixin, TestCase):
                 self.assertFormError(
                     response.context["form"],
                     "code",
-                    f"Código inválido, expirado ou já utilizado. Restam {5-attempt} tentativas.",
+                    (
+                        "Código inválido, expirado ou já utilizado. Resta 1 tentativa."
+                        if attempt == 4
+                        else f"Código inválido, expirado ou já utilizado. Restam {5-attempt} tentativas."
+                    ),
                 )
             else:
                 self.assertRedirects(

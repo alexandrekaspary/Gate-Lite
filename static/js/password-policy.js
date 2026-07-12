@@ -1,6 +1,8 @@
 (() => {
   'use strict';
 
+  const t = window.gettext || ((value) => value);
+
   const policy = document.querySelector('[data-password-policy]');
   const password = document.querySelector('[name="new_password1"]');
   const confirmation = document.querySelector('[name="new_password2"]');
@@ -28,7 +30,7 @@
       return;
     }
     const matches = value === confirmation.value;
-    status.textContent = matches ? 'As senhas coincidem.' : 'As senhas não coincidem.';
+    status.textContent = matches ? t('As senhas coincidem.') : t('As senhas não coincidem.');
     status.className = `password-match-status ${matches ? 'is-met' : 'is-unmet'}`;
   }
 

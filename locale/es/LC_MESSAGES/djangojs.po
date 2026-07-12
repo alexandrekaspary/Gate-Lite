@@ -1,0 +1,36 @@
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: GateLite\n"
+"Language: es\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgid "Cancelar"
+msgstr "Cancelar"
+
+msgid "Confirmar ação"
+msgstr "Confirmar acción"
+
+msgid "Confirmar"
+msgstr "Confirmar"
+
+msgid "Copiado"
+msgstr "Copiado"
+
+msgid "Não foi possível copiar"
+msgstr "No se pudo copiar"
+
+msgid "Mostrar senha"
+msgstr "Mostrar contraseña"
+
+msgid "Ocultar senha"
+msgstr "Ocultar contraseña"
+
+msgid "As senhas coincidem."
+msgstr "Las contraseñas coinciden."
+
+msgid "As senhas não coincidem."
+msgstr "Las contraseñas no coinciden."

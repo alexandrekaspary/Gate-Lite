@@ -1,12 +1,13 @@
 {% extends 'account/base.html' %}
+{% load i18n %}
 
-{% block title %}Autenticação em duas etapas · GateLite{% endblock %}
+{% block title %}{% trans "Autenticação em duas etapas" %} · GateLite{% endblock %}
 {% block content %}
 <section class="account-hero compact">
   <div>
-    <p class="eyebrow">Segurança</p>
-    <h1>Autenticação em duas etapas</h1>
-    <p>Use um aplicativo autenticador para adicionar uma verificação além da senha.</p>
+    <p class="eyebrow">{% trans "Segurança" %}</p>
+    <h1>{% trans "Autenticação em duas etapas" %}</h1>
+    <p>{% trans "Use um aplicativo autenticador para adicionar uma verificação além da senha." %}</p>
   </div>
 </section>
 
@@ -14,54 +15,54 @@
   <section class="panel mfa-panel">
     <div class="account-card-heading">
       <span class="section-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="M9 12h6M12 9v6"/></svg></span>
-      <div><p class="eyebrow">TOTP</p><h2>Segunda etapa do login</h2><p>Códigos temporários compatíveis com os principais aplicativos autenticadores.</p></div>
+      <div><p class="eyebrow">TOTP</p><h2>{% trans "Segunda etapa do login" %}</h2><p>{% trans "Códigos temporários compatíveis com os principais aplicativos autenticadores." %}</p></div>
     </div>
 
     {% if mfa.enabled %}
     <div class="mfa-status-card">
       <div class="mfa-status-row">
-        <div><strong>Autenticação em duas etapas ativa</strong><p>Configurada{% if mfa.verified_at %} em {{ mfa.verified_at|date:'d/m/Y H:i' }}{% endif %}. Sua conta solicitará um código em novos logins.</p></div>
-        <span class="badge success"><i></i>Ativa</span>
+        <div><strong>{% trans "Autenticação em duas etapas ativa" %}</strong><p>{% if mfa.verified_at %}{% blocktrans with configured_at=mfa.verified_at|date:'SHORT_DATETIME_FORMAT' %}Configurada em {{ configured_at }}. Sua conta solicitará um código em novos logins.{% endblocktrans %}{% else %}{% trans "Configurada. Sua conta solicitará um código em novos logins." %}{% endif %}</p></div>
+        <span class="badge success"><i></i>{% trans "Ativa" %}</span>
       </div>
       <div class="mfa-status-row">
-        <div><strong>Códigos de recuperação</strong><p>{{ mfa.recovery_code_hashes|length }} código{{ mfa.recovery_code_hashes|length|pluralize }} disponível{{ mfa.recovery_code_hashes|length|pluralize }} para emergências.</p></div>
-        <span class="badge neutral">{{ mfa.recovery_code_hashes|length }} restante{{ mfa.recovery_code_hashes|length|pluralize }}</span>
+        <div><strong>{% trans "Códigos de recuperação" %}</strong><p>{% blocktrans count count=mfa.recovery_code_hashes|length %}{{ count }} código disponível para emergências.{% plural %}{{ count }} códigos disponíveis para emergências.{% endblocktrans %}</p></div>
+        <span class="badge neutral">{% blocktrans count count=mfa.recovery_code_hashes|length %}{{ count }} restante{% plural %}{{ count }} restantes{% endblocktrans %}</span>
       </div>
     </div>
 
     <details class="mfa-disclosure" {% if recovery_form.errors %}open{% endif %}>
-      <summary>Gerar novos códigos de recuperação</summary>
+      <summary>{% trans "Gerar novos códigos de recuperação" %}</summary>
       <div class="disclosure-content">
-        <p>Os códigos atuais deixarão de funcionar. Confirme sua senha e informe um código do aplicativo.</p>
+        <p>{% trans "Os códigos atuais deixarão de funcionar. Confirme sua senha e informe um código do aplicativo." %}</p>
         <form method="post" action="{% url 'account-mfa-recovery' %}" class="form-stack">
           {% csrf_token %}
           {% if recovery_form.non_field_errors %}<div class="form-error-summary" role="alert">{% for error in recovery_form.non_field_errors %}<p>{{ error }}</p>{% endfor %}</div>{% endif %}
           <div class="field-wrapper {% if recovery_form.password.errors %}has-error{% endif %}"><label for="recovery-password">{{ recovery_form.password.label }}</label><input id="recovery-password" type="password" name="password" autocomplete="current-password" required>{% for error in recovery_form.password.errors %}<span class="field-error" role="alert">{{ error }}</span>{% endfor %}</div>
           <div class="field-wrapper {% if recovery_form.code.errors %}has-error{% endif %}"><label for="recovery-code">{{ recovery_form.code.label }}</label><input id="recovery-code" type="text" name="code" autocomplete="one-time-code" maxlength="32" required>{% for error in recovery_form.code.errors %}<span class="field-error" role="alert">{{ error }}</span>{% endfor %}</div>
-          <div class="form-actions"><button class="btn primary" type="submit">Gerar novos códigos</button></div>
+          <div class="form-actions"><button class="btn primary" type="submit">{% trans "Gerar novos códigos" %}</button></div>
         </form>
       </div>
     </details>
 
     <div class="danger-zone">
-      <h3>Desativar a segunda etapa</h3>
-      <p>Esta ação reduz a proteção da sua conta. Confirme sua senha e um código válido para continuar.</p>
+      <h3>{% trans "Desativar a segunda etapa" %}</h3>
+      <p>{% trans "Esta ação reduz a proteção da sua conta. Confirme sua senha e um código válido para continuar." %}</p>
       <form method="post" action="{% url 'account-mfa-disable' %}" class="form-stack">
         {% csrf_token %}
         {% if disable_form.non_field_errors %}<div class="form-error-summary" role="alert">{% for error in disable_form.non_field_errors %}<p>{{ error }}</p>{% endfor %}</div>{% endif %}
         <div class="field-wrapper {% if disable_form.password.errors %}has-error{% endif %}"><label for="disable-password">{{ disable_form.password.label }}</label><input id="disable-password" type="password" name="password" autocomplete="current-password" required>{% for error in disable_form.password.errors %}<span class="field-error" role="alert">{{ error }}</span>{% endfor %}</div>
         <div class="field-wrapper {% if disable_form.code.errors %}has-error{% endif %}"><label for="disable-code">{{ disable_form.code.label }}</label><input id="disable-code" type="text" name="code" autocomplete="one-time-code" maxlength="32" required>{% for error in disable_form.code.errors %}<span class="field-error" role="alert">{{ error }}</span>{% endfor %}</div>
-        <div class="form-actions"><button class="btn danger" type="submit">Desativar autenticação em duas etapas</button></div>
+        <div class="form-actions"><button class="btn danger" type="submit">{% trans "Desativar autenticação em duas etapas" %}</button></div>
       </form>
     </div>
     {% else %}
     <div class="mfa-status-row">
-      <div><strong>Autenticação em duas etapas desativada</strong><p>Ative para exigir um código temporário depois da sua senha.</p></div>
-      <span class="badge neutral"><i></i>Desativada</span>
+      <div><strong>{% trans "Autenticação em duas etapas desativada" %}</strong><p>{% trans "Ative para exigir um código temporário depois da sua senha." %}</p></div>
+      <span class="badge neutral"><i></i>{% trans "Desativada" %}</span>
     </div>
     <div class="mfa-actions">
-      <a class="btn primary" href="{% url 'account-mfa-setup' %}"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="M9 12h6M12 9v6"/></svg>Configurar agora</a>
-      <a class="btn ghost" href="{% url 'account' %}">Voltar à conta</a>
+      <a class="btn primary" href="{% url 'account-mfa-setup' %}"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="M9 12h6M12 9v6"/></svg>{% trans "Configurar agora" %}</a>
+      <a class="btn ghost" href="{% url 'account' %}">{% trans "Voltar à conta" %}</a>
     </div>
     {% endif %}
   </section>
@@ -69,10 +70,10 @@
   <aside class="mfa-aside">
     <section class="aside-card">
       <span class="aside-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M10 6h4M12 18h.01"/></svg></span>
-      <h2>Como funciona</h2>
-      <ul><li>Instale um aplicativo autenticador confiável.</li><li>Leia o QR code exibido durante a configuração.</li><li>Informe o código temporário a cada novo login.</li></ul>
+      <h2>{% trans "Como funciona" %}</h2>
+      <ul><li>{% trans "Instale um aplicativo autenticador confiável." %}</li><li>{% trans "Leia o QR code exibido durante a configuração." %}</li><li>{% trans "Informe o código temporário a cada novo login." %}</li></ul>
     </section>
-    <section class="aside-card"><h2>Guarde os códigos de recuperação</h2><p>Use-os quando estiver sem acesso ao autenticador. Cada código funciona apenas uma vez.</p></section>
+    <section class="aside-card"><h2>{% trans "Guarde os códigos de recuperação" %}</h2><p>{% trans "Use-os quando estiver sem acesso ao autenticador. Cada código funciona apenas uma vez." %}</p></section>
   </aside>
 </div>
 {% endblock %}

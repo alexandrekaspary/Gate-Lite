@@ -82,7 +82,8 @@ msgstr "Security"
 msgid "Proteção da conta"
 msgstr "Account protection"
 
-msgid "Gerencie sua senha e adicione uma segunda etapa de verificação ao login."
+msgid ""
+"Gerencie sua senha e adicione uma segunda etapa de verificação ao login."
 msgstr "Manage your password and add a second verification step at sign-in."
 
 msgid "Senha configurada"
@@ -104,12 +105,14 @@ msgid "Grupos vinculados"
 msgstr "Linked groups"
 
 msgid "Seus grupos determinam os acessos e as roles herdadas nas aplicações."
-msgstr "Your groups determine your access and the roles inherited in applications."
+msgstr ""
+"Your groups determine your access and the roles inherited in applications."
 
 msgid "Nenhum grupo vinculado"
 msgstr "No linked groups"
 
-msgid "Entre em contato com um administrador se precisar de acesso a uma aplicação."
+msgid ""
+"Entre em contato com um administrador se precisar de acesso a uma aplicação."
 msgstr "Contact an administrator if you need access to an application."
 
 msgid "Sessões de aplicações"
@@ -138,8 +141,12 @@ msgstr "Edit profile"
 msgid "Editar dados pessoais"
 msgstr "Edit personal details"
 
-msgid "Atualize seu nome, idioma, fuso horário e o endereço usado para comunicações de segurança."
-msgstr "Update your name, language, time zone and the address used for security communications."
+msgid ""
+"Atualize seu nome, idioma, fuso horário e o endereço usado para comunicações"
+" de segurança."
+msgstr ""
+"Update your name, language, time zone and the address used for security "
+"communications."
 
 msgid "Dados pessoais"
 msgstr "Personal details"
@@ -162,8 +169,12 @@ msgstr "First name"
 msgid "Sobrenome"
 msgstr "Last name"
 
-msgid "Ao informar um novo endereço, enviaremos um link de confirmação antes de ativá-lo."
-msgstr "When you enter a new address, we will send a confirmation link before activating it."
+msgid ""
+"Ao informar um novo endereço, enviaremos um link de confirmação antes de "
+"ativá-lo."
+msgstr ""
+"When you enter a new address, we will send a confirmation link before "
+"activating it."
 
 msgid "Idioma"
 msgstr "Language"
@@ -172,7 +183,8 @@ msgid "Fuso horário"
 msgstr "Time zone"
 
 msgid "Aplicações conectadas recebem seu idioma e fuso horário no login."
-msgstr "Connected applications receive your language and time zone at sign-in."
+msgstr ""
+"Connected applications receive your language and time zone at sign-in."
 
 msgid "Cancelar"
 msgstr "Cancel"
@@ -190,8 +202,12 @@ msgid "Confirmação pendente"
 msgstr "Confirmation pending"
 
 #, python-format
-msgid "Enviamos um link para <strong>%(pending_email)s</strong>. O endereço atual permanece ativo até a confirmação."
-msgstr "We sent a link to <strong>%(pending_email)s</strong>. The current address remains active until confirmation."
+msgid ""
+"Enviamos um link para <strong>%(pending_email)s</strong>. O endereço atual "
+"permanece ativo até a confirmação."
+msgstr ""
+"We sent a link to <strong>%(pending_email)s</strong>. The current address "
+"remains active until confirmation."
 
 msgid "Reenviar confirmação"
 msgstr "Resend confirmation"
@@ -199,20 +215,27 @@ msgstr "Resend confirmation"
 msgid "Endereço confirmado"
 msgstr "Address verified"
 
-msgid "Seu endereço atual já foi validado e pode ser usado para recuperar o acesso."
-msgstr "Your current address has been verified and can be used to recover access."
+msgid ""
+"Seu endereço atual já foi validado e pode ser usado para recuperar o acesso."
+msgstr ""
+"Your current address has been verified and can be used to recover access."
 
 msgid "Endereço não confirmado"
 msgstr "Address not verified"
 
-msgid "Salve um endereço válido para receber o link de confirmação e habilitar a recuperação de senha."
-msgstr "Save a valid address to receive the confirmation link and enable password recovery."
+msgid ""
+"Salve um endereço válido para receber o link de confirmação e habilitar a "
+"recuperação de senha."
+msgstr ""
+"Save a valid address to receive the confirmation link and enable password "
+"recovery."
 
 msgid "Por que confirmar?"
 msgstr "Why confirm?"
 
 msgid "Impede que outra pessoa cadastre um endereço que não controla."
-msgstr "Prevents someone else from registering an address they do not control."
+msgstr ""
+"Prevents someone else from registering an address they do not control."
 
 msgid "Protege o fluxo de recuperação de senha."
 msgstr "Protects the password recovery flow."
@@ -222,17 +245,800 @@ msgstr "Keeps security notifications at the correct address."
 
 #: identity/views.py identity/forms.py
 #, python-format
-msgid "Uma confirmação já foi enviada. Aguarde %(seconds)s segundos para reenviar."
-msgstr "A confirmation has already been sent. Wait %(seconds)s seconds to resend."
+msgid ""
+"Uma confirmação já foi enviada. Aguarde %(seconds)s segundos para reenviar."
+msgstr ""
+"A confirmation has already been sent. Wait %(seconds)s seconds to resend."
 
 msgid "Este endereço de e-mail já está em uso."
 msgstr "This email address is already in use."
 
-msgid "Não foi possível enviar a confirmação agora. Seus dados de nome foram salvos; tente reenviar em instantes."
-msgstr "We could not send the confirmation right now. Your name details were saved; try resending shortly."
+msgid ""
+"Não foi possível enviar a confirmação agora. Seus dados de nome foram "
+"salvos; tente reenviar em instantes."
+msgstr ""
+"We could not send the confirmation right now. Your name details were saved; "
+"try resending shortly."
 
-msgid "Dados salvos. Enviamos uma confirmação para o novo e-mail; o endereço atual permanece ativo até a confirmação."
-msgstr "Details saved. We sent a confirmation to the new email; the current address remains active until confirmation."
+msgid ""
+"Dados salvos. Enviamos uma confirmação para o novo e-mail; o endereço atual "
+"permanece ativo até a confirmação."
+msgstr ""
+"Details saved. We sent a confirmation to the new email; the current address "
+"remains active until confirmation."
 
 msgid "Dados do perfil atualizados."
 msgstr "Profile details updated."
+
+msgid ""
+"A administração solicitou a troca da sua senha antes de liberar o restante "
+"da conta."
+msgstr ""
+"Administration requires you to change your password before accessing the "
+"rest of your account."
+
+msgid ""
+"A confirmação garante que somente você controle o endereço usado para "
+"recuperar o acesso e receber alertas de segurança."
+msgstr ""
+"Confirmation ensures that only you control the address used to recover "
+"access and receive security alerts."
+
+msgid "A verificação expirou. Entre novamente."
+msgstr "The verification expired. Sign in again."
+
+msgid "Abra o aplicativo autenticador e escolha adicionar uma conta."
+msgstr "Open your authenticator app and choose to add an account."
+
+msgid "Acesso"
+msgstr "Access"
+
+msgid "Acesso protegido"
+msgstr "Protected access"
+
+msgid "Acesso seguro"
+msgstr "Secure access"
+
+msgid "Alterar minha senha"
+msgstr "Change my password"
+
+msgid "Ao menos um caractere especial."
+msgstr "At least one special character."
+
+msgid "Ao menos um número."
+msgstr "At least one number."
+
+msgid "Ao menos uma letra maiúscula."
+msgstr "At least one uppercase letter."
+
+msgid "Ao menos uma letra minúscula."
+msgstr "At least one lowercase letter."
+
+msgid ""
+"Armazene os códigos em um gerenciador de senhas ou outro local seguro. Cada "
+"código pode ser usado uma única vez."
+msgstr ""
+"Store the codes in a password manager or another secure location. Each code "
+"can be used only once."
+
+msgid ""
+"Armazene-os fora deste dispositivo, preferencialmente em um gerenciador de "
+"senhas."
+msgstr "Store them away from this device, preferably in a password manager."
+
+msgid "Ativar e continuar"
+msgstr "Enable and continue"
+
+msgid "Ative para exigir um código temporário depois da sua senha."
+msgstr "Enable it to require a temporary code after your password."
+
+msgid "Atualização obrigatória"
+msgstr "Required update"
+
+msgid ""
+"Autenticação OpenID Connect, permissões por client e tokens assinados com "
+"chaves gerenciadas."
+msgstr ""
+"OpenID Connect authentication, per-client permissions, and tokens signed "
+"with managed keys."
+
+msgid "Autenticação em dois fatores desativada."
+msgstr "Two-factor authentication disabled."
+
+msgid "Autenticação em duas etapas ativa"
+msgstr "Two-factor authentication enabled"
+
+msgid "Autenticação em duas etapas desativada"
+msgstr "Two-factor authentication disabled"
+
+msgid "Ação concluída"
+msgstr "Action completed"
+
+msgid "Bem-vindo de volta"
+msgstr "Welcome back"
+
+msgid ""
+"Cada código substitui o código temporário do autenticador uma única vez."
+msgstr "Each code can replace a temporary authenticator code once."
+
+msgid "Como funciona"
+msgstr "How it works"
+
+msgid "Concluir"
+msgstr "Finish"
+
+msgid "Conecte seu aplicativo autenticador e confirme um código temporário."
+msgstr "Connect your authenticator app and confirm a temporary code."
+
+msgid ""
+"Configurada em %(configured_at)s. Sua conta solicitará um código em novos "
+"logins."
+msgstr ""
+"Set up on %(configured_at)s. Your account will request a code on new sign-"
+"ins."
+
+msgid "Configurada. Sua conta solicitará um código em novos logins."
+msgstr "Set up. Your account will request a code on new sign-ins."
+
+msgid "Configurar agora"
+msgstr "Set up now"
+
+msgid "Configurar autenticação em duas etapas"
+msgstr "Set up two-factor authentication"
+
+msgid "Configuração concluída"
+msgstr "Setup completed"
+
+msgid "Configuração segura"
+msgstr "Secure setup"
+
+msgid "Confira seu e-mail"
+msgstr "Check your email"
+
+msgid "Confira sua caixa de entrada"
+msgstr "Check your inbox"
+
+msgid ""
+"Confira também as pastas de spam e lixo eletrônico. O link é temporário e "
+"pode ser usado somente no fluxo de recuperação."
+msgstr ""
+"Also check your spam and junk folders. The link is temporary and can only be"
+" used in the recovery flow."
+
+msgid "Confirmar e-mail"
+msgstr "Confirm email"
+
+msgid "Confirmar meu e-mail"
+msgstr "Confirm my email"
+
+msgid "Confirme a nova senha"
+msgstr "Confirm the new password"
+
+msgid "Confirme a nova senha antes de continuar"
+msgstr "Confirm the new password before continuing"
+
+msgid "Confirme o e-mail da sua conta %(site_name)s"
+msgstr "Confirm the email for your %(site_name)s account"
+
+msgid ""
+"Confirme que <strong>%(target_email)s</strong> pertence a você. Depois "
+"disso, o endereço poderá ser usado para recuperar sua conta."
+msgstr ""
+"Confirm that <strong>%(target_email)s</strong> belongs to you. The address "
+"can then be used to recover your account."
+
+msgid "Confirme que este endereço pertence a você acessando o link abaixo:"
+msgstr "Confirm that this address belongs to you by opening the link below:"
+
+msgid "Confirme que realmente é você."
+msgstr "Confirm that it's really you."
+
+msgid "Confirme seu endereço"
+msgstr "Confirm your address"
+
+msgid "Confirme seu endereço de e-mail"
+msgstr "Confirm your email address"
+
+msgid "Confirme sua senha atual antes de continuar."
+msgstr "Confirm your current password before continuing."
+
+msgid ""
+"Conta temporariamente bloqueada por excesso de tentativas. Tente novamente "
+"mais tarde."
+msgstr "Account temporarily locked after too many attempts. Try again later."
+
+msgid "Continuar"
+msgstr "Continue"
+
+msgid "Copiar chave"
+msgstr "Copy key"
+
+msgid "Código de recuperação"
+msgstr "Recovery code"
+
+msgid "Código inválido. Confira o horário do dispositivo e tente novamente."
+msgstr "Invalid code. Check your device time and try again."
+
+msgid "Código temporário"
+msgstr "Temporary code"
+
+msgid "Códigos de recuperação"
+msgstr "Recovery codes"
+
+msgid ""
+"Códigos temporários compatíveis com os principais aplicativos "
+"autenticadores."
+msgstr "Temporary codes compatible with leading authenticator apps."
+
+msgid "Defina sua nova senha"
+msgstr "Set your new password"
+
+msgid "Defina uma nova senha"
+msgstr "Set a new password"
+
+msgid "Defina uma nova senha para continuar."
+msgstr "Set a new password to continue."
+
+msgid "Defina uma senha nova e exclusiva"
+msgstr "Set a new, unique password"
+
+msgid "Definir nova senha"
+msgstr "Set new password"
+
+msgid "Desativada"
+msgstr "Disabled"
+
+msgid "Desativar a segunda etapa"
+msgstr "Disable the second factor"
+
+msgid "Desativar autenticação em duas etapas"
+msgstr "Disable two-factor authentication"
+
+msgid "Digite o código de seis dígitos gerado pelo aplicativo."
+msgstr "Enter the six-digit code generated by the app."
+
+msgid ""
+"Digite o código do aplicativo autenticador ou um código de recuperação."
+msgstr "Enter the code from your authenticator app or a recovery code."
+
+msgid "E-mail confirmado. Entre novamente para continuar."
+msgstr "Email confirmed. Sign in again to continue."
+
+msgid ""
+"Ele pode ter expirado ou já ter sido utilizado. Entre na sua conta e "
+"solicite uma nova mensagem pelo perfil."
+msgstr ""
+"It may have expired or already been used. Sign in and request a new message "
+"from your profile."
+
+msgid ""
+"Ele pode ter expirado ou já ter sido utilizado. Solicite uma nova "
+"recuperação para continuar."
+msgstr ""
+"It may have expired or already been used. Request a new recovery link to "
+"continue."
+
+msgid "Endereço nunca exposto na página"
+msgstr "Address never exposed on the page"
+
+msgid "Entrar"
+msgstr "Sign in"
+
+msgid "Entrar com segurança"
+msgstr "Sign in securely"
+
+msgid "Entrar no GateLite"
+msgstr "Sign in to GateLite"
+
+msgid "Entre com sua conta para continuar."
+msgstr "Sign in with your account to continue."
+
+msgid "Enviamos um novo link de confirmação."
+msgstr "We sent a new confirmation link."
+
+msgid "Enviar link de recuperação"
+msgstr "Send recovery link"
+
+msgid "Enviar novamente"
+msgstr "Send again"
+
+msgid ""
+"Escolha uma senha forte e diferente das que você utiliza em outros serviços."
+msgstr ""
+"Choose a strong password that differs from those you use for other services."
+
+msgid "Escolha uma senha forte e exclusiva para proteger sua conta."
+msgstr "Choose a strong, unique password to protect your account."
+
+msgid "Esqueceu sua senha?"
+msgstr "Forgot your password?"
+
+msgid "Esqueci minha senha"
+msgstr "I forgot my password"
+
+msgid "Esse endereço pertence a outra conta. Escolha outro e-mail."
+msgstr "That address belongs to another account. Choose another email."
+
+msgid ""
+"Esta ação reduz a proteção da sua conta. Confirme sua senha e um código "
+"válido para continuar."
+msgstr ""
+"This action reduces your account protection. Confirm your password and a "
+"valid code to continue."
+
+msgid "Esta é a única vez que eles serão exibidos."
+msgstr "This is the only time they will be displayed."
+
+msgid "Este link não é mais válido"
+msgstr "This link is no longer valid"
+
+msgid "Estes códigos não serão exibidos novamente."
+msgstr "These codes will not be displayed again."
+
+msgid "Evite nomes e informações pessoais."
+msgstr "Avoid names and personal information."
+
+msgid "Faça a configuração em um dispositivo confiável."
+msgstr "Complete the setup on a trusted device."
+
+msgid "Finalize salvando os códigos de recuperação."
+msgstr "Finish by saving the recovery codes."
+
+msgid "GateLite — início"
+msgstr "GateLite — home"
+
+msgid "Gerar novos códigos"
+msgstr "Generate new codes"
+
+msgid "Gerar novos códigos de recuperação"
+msgstr "Generate new recovery codes"
+
+msgid "Guarde os códigos de recuperação"
+msgstr "Keep your recovery codes safe"
+
+msgid "Identidade centralizada"
+msgstr "Centralized identity"
+
+msgid "Identidade protegida"
+msgstr "Protected identity"
+
+msgid "Identidade verificada"
+msgstr "Verified identity"
+
+msgid "Informe o código"
+msgstr "Enter the code"
+
+msgid "Informe o código temporário a cada novo login."
+msgstr "Enter the temporary code at every new sign-in."
+
+msgid ""
+"Informe o e-mail confirmado da sua conta. Se ele estiver cadastrado, "
+"enviaremos um link de recuperação."
+msgstr ""
+"Enter the verified email for your account. If it is registered, we will send"
+" a recovery link."
+
+msgid "Informe um endereço de e-mail antes de solicitar a confirmação."
+msgstr "Enter an email address before requesting confirmation."
+
+msgid "Instale um aplicativo autenticador confiável."
+msgstr "Install a trusted authenticator app."
+
+msgid "Ir para a verificação"
+msgstr "Skip to verification"
+
+msgid "Ir para o conteúdo"
+msgstr "Skip to content"
+
+msgid "Ir para o login"
+msgstr "Go to sign in"
+
+msgid "JWT assinado com RS256"
+msgstr "JWT signed with RS256"
+
+msgid "Leia o QR code"
+msgstr "Scan the QR code"
+
+msgid "Leia o QR code exibido durante a configuração."
+msgstr "Scan the QR code displayed during setup."
+
+msgid "Leia o QR code. Se necessário, informe manualmente a chave abaixo."
+msgstr "Scan the QR code. If necessary, enter the key below manually."
+
+msgid "Link de confirmação inválido ou expirado."
+msgstr "Invalid or expired confirmation link."
+
+msgid "Link indisponível"
+msgstr "Link unavailable"
+
+msgid "Link individual e temporário"
+msgstr "Individual, temporary link"
+
+msgid "Link validado"
+msgstr "Link validated"
+
+msgid "Mensagem automática de segurança"
+msgstr "Automated security message"
+
+msgid "Muitas tentativas inválidas. Entre novamente."
+msgstr "Too many invalid attempts. Sign in again."
+
+msgid "Nenhum código gerado"
+msgstr "No code generated"
+
+msgid "Nenhuma senha enviada por e-mail"
+msgstr "No password sent by email"
+
+msgid "Nova senha"
+msgstr "New password"
+
+msgid "Novos códigos de recuperação"
+msgstr "New recovery codes"
+
+msgid "Não envie a chave ou o QR code para outras pessoas."
+msgstr "Do not send the key or QR code to anyone else."
+
+msgid ""
+"Não foi possível enviar a mensagem. Verifique a configuração de e-mail e "
+"tente novamente."
+msgstr ""
+"The message could not be sent. Check the email configuration and try again."
+
+msgid "Não foi possível validar este link"
+msgstr "This link could not be validated"
+
+msgid "Não pode conter somente números."
+msgstr "Cannot contain numbers only."
+
+msgid "Não pode ser parecida com seu nome, e-mail ou usuário."
+msgstr "Cannot be similar to your name, email, or username."
+
+msgid "Não pode ser uma senha comum."
+msgstr "Cannot be a commonly used password."
+
+msgid "Não reutilize senhas de outros serviços."
+msgstr "Do not reuse passwords from other services."
+
+msgid ""
+"O GateLite valida sua identidade por e-mail antes de permitir a definição de"
+" uma nova senha."
+msgstr ""
+"GateLite verifies your identity by email before allowing you to set a new "
+"password."
+
+msgid "O QR code contém a chave da sua conta. Não o compartilhe."
+msgstr "The QR code contains your account key. Do not share it."
+
+msgid "O envio de e-mails está desativado; nenhum link foi enviado."
+msgstr "Email delivery is disabled; no link was sent."
+
+msgid ""
+"O novo endereço já está ativo e poderá ser usado nas comunicações de "
+"segurança e na recuperação da sua conta."
+msgstr ""
+"The new address is now active and can be used for security communications "
+"and account recovery."
+
+msgid "Olá, %(name)s."
+msgstr "Hello, %(name)s."
+
+msgid ""
+"Olá, %(name)s. Recebemos uma solicitação para redefinir a senha da sua "
+"conta."
+msgstr ""
+"Hello, %(name)s. We received a request to reset your account password."
+
+msgid ""
+"Olá, %(name)s. Recebemos uma solicitação para usar "
+"<strong>%(target_email)s</strong> na sua conta."
+msgstr ""
+"Hello, %(name)s. We received a request to use "
+"<strong>%(target_email)s</strong> for your account."
+
+msgid "Os códigos anteriores foram revogados."
+msgstr "The previous codes have been revoked."
+
+msgid ""
+"Os códigos atuais deixarão de funcionar. Confirme sua senha e informe um "
+"código do aplicativo."
+msgstr ""
+"The current codes will stop working. Confirm your password and enter a code "
+"from the app."
+
+msgid "Os requisitos são verificados pelo servidor"
+msgstr "Requirements are verified by the server"
+
+msgid "Pelo menos %(count)s caracteres."
+msgstr "At least %(count)s characters."
+
+msgid "Proteções da recuperação de senha"
+msgstr "Password recovery protections"
+
+msgid "QR code indisponível"
+msgstr "QR code unavailable"
+
+msgid "QR code para configurar o aplicativo autenticador"
+msgstr "QR code for setting up the authenticator app"
+
+msgid ""
+"Recebemos uma solicitação para redefinir a senha da sua conta GateLite."
+msgstr "We received a request to reset your GateLite account password."
+
+msgid "Recuperar senha"
+msgstr "Recover password"
+
+msgid "Recuperação concluída"
+msgstr "Recovery completed"
+
+msgid "Recuperação de acesso"
+msgstr "Access recovery"
+
+msgid "Recuperação de senha protegida"
+msgstr "Protected password recovery"
+
+msgid "Recuperação protegida"
+msgstr "Protected recovery"
+
+msgid "Recupere o acesso com segurança."
+msgstr "Recover access securely."
+
+msgid "Recursos de segurança"
+msgstr "Security features"
+
+msgid "Redefinir minha senha"
+msgstr "Reset my password"
+
+msgid "Redefinição de senha da sua conta GateLite"
+msgstr "Password reset for your GateLite account"
+
+msgid "Requisitos da senha"
+msgstr "Password requirements"
+
+msgid "Resposta que preserva sua privacidade"
+msgstr "Privacy-preserving response"
+
+msgid "Revise os campos informados e tente novamente."
+msgstr "Review the fields and try again."
+
+msgid "Salvar nova senha"
+msgstr "Save new password"
+
+msgid "Salve os novos códigos"
+msgstr "Save the new codes"
+
+msgid "Salve seus códigos de recuperação"
+msgstr "Save your recovery codes"
+
+msgid ""
+"Se existir uma conta com o e-mail informado, você receberá as instruções em "
+"alguns instantes."
+msgstr ""
+"If an account exists for the email provided, you will receive instructions "
+"shortly."
+
+msgid ""
+"Se você não reconhece esta alteração, entre em contato com o administrador."
+msgstr "If you do not recognize this change, contact the administrator."
+
+msgid ""
+"Se você não solicitou esta alteração, ignore esta mensagem. O endereço atual"
+" continuará associado à conta."
+msgstr ""
+"If you did not request this change, ignore this message. The current address"
+" will remain associated with the account."
+
+msgid ""
+"Se você não solicitou esta alteração, ignore esta mensagem. Sua senha atual "
+"continuará válida."
+msgstr ""
+"If you did not request this change, ignore this message. Your current "
+"password will remain valid."
+
+msgid "Segunda etapa"
+msgstr "Second factor"
+
+msgid "Segunda etapa do login"
+msgstr "Second sign-in factor"
+
+msgid "Segundo fator temporariamente bloqueado. Tente novamente mais tarde."
+msgstr "Second factor temporarily locked. Try again later."
+
+msgid "Senha"
+msgstr "Password"
+
+msgid "Senha alterada com sucesso. As outras sessões foram encerradas."
+msgstr "Password changed successfully. Other sessions have been ended."
+
+msgid "Senha atualizada"
+msgstr "Password updated"
+
+msgid "Sessão da aplicação encerrada."
+msgstr "Application session ended."
+
+msgid "Seu e-mail foi confirmado"
+msgstr "Your email has been confirmed"
+
+msgid "Seu e-mail também protege sua conta."
+msgstr "Your email also protects your account."
+
+msgid "Solicitar novo link"
+msgstr "Request new link"
+
+msgid "Solicitação recebida"
+msgstr "Request received"
+
+msgid "Sua conexão e suas credenciais são protegidas."
+msgstr "Your connection and credentials are protected."
+
+msgid "Sua senha anterior não é solicitada nesta etapa."
+msgstr "Your previous password is not required at this step."
+
+msgid "Sua senha foi atualizada"
+msgstr "Your password has been updated"
+
+msgid "Sua senha precisa ser atualizada."
+msgstr "Your password needs to be updated."
+
+msgid "Troca obrigatória"
+msgstr "Required change"
+
+msgid "Troca obrigatória de senha"
+msgstr "Required password change"
+
+msgid "Um acesso seguro para todas as suas aplicações."
+msgstr "Secure access for all your applications."
+
+msgid "Um código de recuperação também pode ser usado neste campo."
+msgstr "A recovery code can also be used in this field."
+
+msgid ""
+"Uma segunda etapa impede o acesso mesmo quando outra pessoa conhece sua "
+"senha."
+msgstr ""
+"A second factor prevents access even when someone else knows your password."
+
+msgid "Uma senha segura"
+msgstr "A secure password"
+
+msgid ""
+"Use o botão abaixo para escolher uma nova senha. O link é individual e "
+"temporário."
+msgstr ""
+"Use the button below to choose a new password. The link is individual and "
+"temporary."
+
+msgid "Use o link abaixo para escolher uma nova senha:"
+msgstr "Use the link below to choose a new password:"
+
+msgid ""
+"Use um aplicativo autenticador para adicionar uma verificação além da senha."
+msgstr "Use an authenticator app to add verification beyond your password."
+
+msgid "Use um aplicativo compatível com códigos temporários."
+msgstr "Use an app compatible with temporary codes."
+
+msgid "Use uma combinação longa e difícil de adivinhar."
+msgstr "Use a long combination that is difficult to guess."
+
+msgid ""
+"Use-os quando estiver sem acesso ao autenticador. Cada código funciona "
+"apenas uma vez."
+msgstr ""
+"Use them when you cannot access the authenticator. Each code works only "
+"once."
+
+msgid "Uso emergencial"
+msgstr "Emergency use"
+
+msgid "Validação concluída"
+msgstr "Validation completed"
+
+msgid "Validação de identidade"
+msgstr "Identity verification"
+
+msgid "Validação individual e temporária"
+msgstr "Individual, temporary validation"
+
+msgid "Verificar e continuar"
+msgstr "Verify and continue"
+
+msgid "Verificação adicional"
+msgstr "Additional verification"
+
+msgid "Verificação em duas etapas"
+msgstr "Two-factor verification"
+
+msgid ""
+"Você já pode entrar no GateLite e nas aplicações conectadas usando a nova "
+"senha."
+msgstr ""
+"You can now sign in to GateLite and connected applications using the new "
+"password."
+
+msgid ""
+"Você solicitou o uso de %(target_email)s como e-mail da sua conta "
+"%(site_name)s."
+msgstr ""
+"You requested to use %(target_email)s as the email for your %(site_name)s "
+"account."
+
+msgid "Voltar ao login"
+msgstr "Back to sign in"
+
+msgid "Voltar ao perfil"
+msgstr "Back to profile"
+
+msgid "Voltar para o login"
+msgstr "Back to sign in"
+
+msgid "Voltar à conta"
+msgstr "Back to account"
+
+msgid "Voltar à minha conta"
+msgstr "Back to my account"
+
+msgid "obrigatório"
+msgstr "required"
+
+#, python-format
+msgid "%(count)s código disponível para emergências."
+msgid_plural "%(count)s códigos disponíveis para emergências."
+msgstr[0] "%(count)s code available for emergencies."
+msgstr[1] "%(count)s codes available for emergencies."
+
+#, python-format
+msgid "%(count)s restante"
+msgid_plural "%(count)s restantes"
+msgstr[0] "%(count)s remaining"
+msgstr[1] "%(count)s remaining"
+
+#, python-format
+msgid "A mensagem já foi enviada. Tente novamente em %(count)s segundo."
+msgid_plural ""
+"A mensagem já foi enviada. Tente novamente em %(count)s segundos."
+msgstr[0] "The message has already been sent. Try again in %(count)s second."
+msgstr[1] "The message has already been sent. Try again in %(count)s seconds."
+
+#, python-format
+msgid "Código inválido, expirado ou já utilizado. Resta %(count)s tentativa."
+msgid_plural ""
+"Código inválido, expirado ou já utilizado. Restam %(count)s tentativas."
+msgstr[0] ""
+"Invalid, expired, or previously used code. %(count)s attempt remains."
+msgstr[1] ""
+"Invalid, expired, or previously used code. %(count)s attempts remain."
+
+#, python-format
+msgid ""
+"Confirme que o endereço pertence a você. Este link expira em %(hours)s hora."
+msgid_plural ""
+"Confirme que o endereço pertence a você. Este link expira em %(hours)s "
+"horas."
+msgstr[0] ""
+"Confirm that the address belongs to you. This link expires in %(hours)s "
+"hour."
+msgstr[1] ""
+"Confirm that the address belongs to you. This link expires in %(hours)s "
+"hours."
+
+#, python-format
+msgid ""
+"O link expira em %(hours)s hora. Se você não solicitou esta alteração, "
+"ignore esta mensagem; o endereço atual continuará associado à conta."
+msgid_plural ""
+"O link expira em %(hours)s horas. Se você não solicitou esta alteração, "
+"ignore esta mensagem; o endereço atual continuará associado à conta."
+msgstr[0] ""
+"The link expires in %(hours)s hour. If you did not request this change, "
+"ignore this message; the current address will remain associated with the "
+"account."
+msgstr[1] ""
+"The link expires in %(hours)s hours. If you did not request this change, "
+"ignore this message; the current address will remain associated with the "
+"account."
+
+#, python-format
+msgid "Tente novamente em %(count)s segundo."
+msgid_plural "Tente novamente em %(count)s segundos."
+msgstr[0] "Try again in %(count)s second."
+msgstr[1] "Try again in %(count)s seconds."

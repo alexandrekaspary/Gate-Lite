@@ -1,38 +1,38 @@
-{% load static %}
+{% load static i18n %}
 <!doctype html>
-<html lang="pt-br">
+<html lang="{{ LANGUAGE_CODE }}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light">
   <meta name="theme-color" content="#0a0a0a">
-  <title>Verificação em duas etapas · GateLite</title>
+  <title>{% trans "Verificação em duas etapas" %} · GateLite</title>
   <link rel="icon" type="image/svg+xml" href="{% static 'img/favicon.svg' %}">
   <link rel="stylesheet" href="{% static 'css/app.css' %}">
 </head>
 <body class="login-page">
-  <a class="skip-link" href="#two-factor-form">Ir para a verificação</a>
+  <a class="skip-link" href="#two-factor-form">{% trans "Ir para a verificação" %}</a>
   <main class="login-shell">
     <section class="login-brand-panel" aria-label="GateLite Identity Platform">
-      <a class="brand login-logo" href="/" aria-label="GateLite — início"><img class="brand-mark" src="{% static 'img/gatelite-mark.svg' %}" alt="" width="36" height="36"><span class="brand-copy"><strong>GateLite</strong><small>Identity Platform</small></span></a>
+      <a class="brand login-logo" href="/" aria-label="{% trans 'GateLite — início' %}"><img class="brand-mark" src="{% static 'img/gatelite-mark.svg' %}" alt="" width="36" height="36"><span class="brand-copy"><strong>GateLite</strong><small>Identity Platform</small></span></a>
       <div class="login-pitch">
         <span class="login-shield"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="M9 12h6M12 9v6"/></svg></span>
-        <p class="eyebrow light">Verificação adicional</p>
-        <h1>Confirme que realmente é você.</h1>
-        <p>Uma segunda etapa impede o acesso mesmo quando outra pessoa conhece sua senha.</p>
+        <p class="eyebrow light">{% trans "Verificação adicional" %}</p>
+        <h1>{% trans "Confirme que realmente é você." %}</h1>
+        <p>{% trans "Uma segunda etapa impede o acesso mesmo quando outra pessoa conhece sua senha." %}</p>
       </div>
-      <div class="login-features"><span><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Código temporário</span><span><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Código de recuperação</span></div>
-      <small class="login-footer">GateLite · Acesso protegido</small>
+      <div class="login-features"><span><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>{% trans "Código temporário" %}</span><span><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>{% trans "Código de recuperação" %}</span></div>
+      <small class="login-footer">GateLite · {% trans "Acesso protegido" %}</small>
     </section>
 
     <section class="login-form-panel">
       <div class="login-card">
         <div class="mobile-login-logo"><img class="brand-mark" src="{% static 'img/gatelite-mark.svg' %}" alt="" width="34" height="34"><strong>GateLite</strong></div>
-        <p class="eyebrow">Segunda etapa</p>
-        <h2>Informe o código</h2>
-        <p class="login-intro">Digite o código do aplicativo autenticador ou um código de recuperação.</p>
+        <p class="eyebrow">{% trans "Segunda etapa" %}</p>
+        <h2>{% trans "Informe o código" %}</h2>
+        <p class="login-intro">{% trans "Digite o código do aplicativo autenticador ou um código de recuperação." %}</p>
 
-        {% if messages %}<div class="message-stack" aria-live="polite">{% for message in messages %}<div class="alert {{ message.tags|default:'info' }}" role="status"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg><span>{{ message }}</span><button class="alert-close" type="button" aria-label="Fechar aviso">×</button></div>{% endfor %}</div>{% endif %}
+        {% if messages %}<div class="message-stack" aria-live="polite">{% for message in messages %}<div class="alert {{ message.tags|default:'info' }}" role="status"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg><span>{{ message }}</span><button class="alert-close" type="button" aria-label="{% trans 'Fechar aviso' %}">×</button></div>{% endfor %}</div>{% endif %}
 
         {% if form.non_field_errors %}<div class="alert error" role="alert"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg><span>{% for error in form.non_field_errors %}{{ error }}{% endfor %}</span></div>{% endif %}
         <form method="post" class="form-stack login-form" id="two-factor-form">
@@ -44,12 +44,13 @@
             {% for error in form.code.errors %}<span class="field-error" role="alert">{{ error }}</span>{% endfor %}
           </div>
           {% if next_url %}<input type="hidden" name="next" value="{{ next_url }}">{% endif %}
-          <button class="btn primary login-submit" type="submit">Verificar e continuar<svg aria-hidden="true" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></button>
+          <button class="btn primary login-submit" type="submit">{% trans "Verificar e continuar" %}<svg aria-hidden="true" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></button>
         </form>
-        <div class="login-security-note"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/></svg><span>Um código de recuperação também pode ser usado neste campo.</span></div>
+        <div class="login-security-note"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/></svg><span>{% trans "Um código de recuperação também pode ser usado neste campo." %}</span></div>
       </div>
     </section>
   </main>
+  <script src="{% url 'javascript-catalog' %}"></script>
   <script src="{% static 'js/app.js' %}"></script>
 </body>
 </html>

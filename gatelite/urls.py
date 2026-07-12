@@ -1,10 +1,12 @@
 from django.contrib import admin
 from django.contrib.auth import views as auth_views
 from django.urls import include, path
+from django.views.i18n import JavaScriptCatalog
 from identity.views import SecurePasswordResetCompleteView, SecurePasswordResetConfirmView, VerifiedPasswordResetDoneView, VerifiedPasswordResetView, account, account_email_confirm, account_email_resend, account_mfa, account_mfa_disable, account_mfa_recovery, account_mfa_setup, account_profile_edit, admin_login_redirect, change_own_password, discovery, login_2fa, login_view, revoke_own_session
 
 urlpatterns = [
     path(".well-known/openid-configuration", discovery, name="openid-configuration"),
+    path("i18n/js-catalog/", JavaScriptCatalog.as_view(), name="javascript-catalog"),
     path("admin/login/", admin_login_redirect, name="admin-login-redirect"),
     path("admin/", admin.site.urls),
     path("login/", login_view, name="login"),

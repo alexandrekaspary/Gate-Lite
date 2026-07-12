@@ -1,68 +1,69 @@
-{% load static %}
+{% load static i18n %}
 <!doctype html>
-<html lang="pt-br">
+<html lang="{{ LANGUAGE_CODE }}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light">
   <meta name="theme-color" content="#0a0a0a">
-  <title>Entrar · GateLite</title>
+  <title>{% trans "Entrar" %} · GateLite</title>
   <link rel="icon" type="image/svg+xml" href="{% static 'img/favicon.svg' %}">
   <link rel="stylesheet" href="{% static 'css/app.css' %}">
 </head>
 <body class="login-page">
   <main class="login-shell">
     <section class="login-brand-panel" aria-label="GateLite Identity Platform">
-      <a class="brand login-logo" href="/" aria-label="GateLite — início"><img class="brand-mark" src="{% static 'img/gatelite-mark.svg' %}" alt="" width="36" height="36"><span class="brand-copy"><strong>GateLite</strong><small>Identity Platform</small></span></a>
+      <a class="brand login-logo" href="/" aria-label="{% trans 'GateLite — início' %}"><img class="brand-mark" src="{% static 'img/gatelite-mark.svg' %}" alt="" width="36" height="36"><span class="brand-copy"><strong>GateLite</strong><small>Identity Platform</small></span></a>
       <div class="login-pitch">
         <span class="login-shield"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></svg></span>
-        <p class="eyebrow light">Identidade centralizada</p>
-        <h1>Um acesso seguro para todas as suas aplicações.</h1>
-        <p>Autenticação OpenID Connect, permissões por client e tokens assinados com chaves gerenciadas.</p>
+        <p class="eyebrow light">{% trans "Identidade centralizada" %}</p>
+        <h1>{% trans "Um acesso seguro para todas as suas aplicações." %}</h1>
+        <p>{% trans "Autenticação OpenID Connect, permissões por client e tokens assinados com chaves gerenciadas." %}</p>
       </div>
-      <div class="login-features" aria-label="Recursos de segurança">
+      <div class="login-features" aria-label="{% trans 'Recursos de segurança' %}">
         <span><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>OpenID Connect</span>
         <span><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Authorization Code + PKCE</span>
-        <span><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>JWT assinado com RS256</span>
+        <span><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>{% trans "JWT assinado com RS256" %}</span>
       </div>
-      <small class="login-footer">GateLite · Acesso protegido</small>
+      <small class="login-footer">GateLite · {% trans "Acesso protegido" %}</small>
     </section>
 
     <section class="login-form-panel">
       <div class="login-card">
         <div class="mobile-login-logo"><img class="brand-mark" src="{% static 'img/gatelite-mark.svg' %}" alt="" width="34" height="34"><strong>GateLite</strong></div>
-        <p class="eyebrow">Acesso seguro</p>
-        <h2>Bem-vindo de volta</h2>
-        <p class="login-intro">Entre com sua conta para continuar.</p>
+        <p class="eyebrow">{% trans "Acesso seguro" %}</p>
+        <h2>{% trans "Bem-vindo de volta" %}</h2>
+        <p class="login-intro">{% trans "Entre com sua conta para continuar." %}</p>
 
         {% if messages %}
         <div class="message-stack" aria-live="polite">
-          {% for message in messages %}<div class="alert {{ message.tags|default:'info' }}" role="status"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg><span>{{ message }}</span><button class="alert-close" type="button" aria-label="Fechar aviso">×</button></div>{% endfor %}
+          {% for message in messages %}<div class="alert {{ message.tags|default:'info' }}" role="status"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg><span>{{ message }}</span><button class="alert-close" type="button" aria-label="{% trans 'Fechar aviso' %}">×</button></div>{% endfor %}
         </div>
         {% endif %}
 
         {% if form.errors %}
-        <div class="alert error" role="alert"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg><span>{% if form.non_field_errors %}{% for error in form.non_field_errors %}{{ error }}{% if not forloop.last %}<br>{% endif %}{% endfor %}{% else %}Revise os campos informados e tente novamente.{% endif %}</span></div>
+        <div class="alert error" role="alert"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg><span>{% if form.non_field_errors %}{% for error in form.non_field_errors %}{{ error }}{% if not forloop.last %}<br>{% endif %}{% endfor %}{% else %}{% trans "Revise os campos informados e tente novamente." %}{% endif %}</span></div>
         {% endif %}
 
         <form method="post" class="form-stack login-form">
           {% csrf_token %}
           <div class="field-wrapper">
-            <label for="{{ form.username.id_for_label }}">Usuário</label>
+            <label for="{{ form.username.id_for_label }}">{% trans "Usuário" %}</label>
             <div class="input-icon-wrap"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20 21a8 8 0 0 0-16 0M12 13a5 5 0 1 0 0-10 5 5 0 0 0 0 10Z"/></svg>{{ form.username }}</div>
           </div>
           <div class="field-wrapper">
-            <label for="{{ form.password.id_for_label }}">Senha</label>
+            <label for="{{ form.password.id_for_label }}">{% trans "Senha" %}</label>
             <div class="input-icon-wrap"><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="10" rx="1"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>{{ form.password }}</div>
           </div>
-          <div class="login-form-meta"><a href="{% url 'password-reset' %}">Esqueci minha senha</a></div>
-          <button class="btn primary login-submit" type="submit">Entrar com segurança<svg aria-hidden="true" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></button>
+          <div class="login-form-meta"><a href="{% url 'password-reset' %}">{% trans "Esqueci minha senha" %}</a></div>
+          <button class="btn primary login-submit" type="submit">{% trans "Entrar com segurança" %}<svg aria-hidden="true" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></button>
           {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
         </form>
-        <div class="login-security-note"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/></svg><span>Sua conexão e suas credenciais são protegidas.</span></div>
+        <div class="login-security-note"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/></svg><span>{% trans "Sua conexão e suas credenciais são protegidas." %}</span></div>
       </div>
     </section>
   </main>
+  <script src="{% url 'javascript-catalog' %}"></script>
   <script src="{% static 'js/app.js' %}"></script>
 </body>
 </html>

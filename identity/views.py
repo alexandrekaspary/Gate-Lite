@@ -16,7 +16,7 @@ from django.contrib.auth.models import Group, Permission, User
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.utils.crypto import constant_time_compare
 from django.utils.http import base36_to_int
-from django.utils.translation import gettext as _
+from django.utils.translation import gettext as _, ngettext
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
 from django.db import transaction
@@ -25,7 +25,7 @@ from django.http import Http404, JsonResponse, HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.urls import reverse_lazy
-from django.utils import timezone
+from django.utils import timezone, translation
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.cache import never_cache
@@ -34,7 +34,7 @@ from django.views.decorators.http import require_http_methods, require_POST
 from .crypto import generate_key
 from .crypto import decrypt_value, encrypt_value
 from .forms import AccountProfileForm, ClientForm, ClientRoleForm, EmailConfigurationForm, GroupForm, MFAChallengeForm, MFASetupConfirmForm, PasswordAndMFAForm, PermissionForm, SecurityPolicyForm, SecureSetPasswordForm, UserCreateForm, UserEditForm, VerifiedEmailPasswordResetForm
-from .models import AuditEvent, AuthorizationCode, ClientRole, EmailConfiguration, GroupClientRoleAssignment, MFAChallenge, OIDCClient, OIDCScope, OIDCSession, RefreshToken, RevokedAccessToken, SecurityPolicy, ServiceAccountRoleAssignment, SigningKey, UserClientRoleAssignment, UserMFA, UserSecurityState
+from .models import AuditEvent, AuthorizationCode, ClientRole, EmailConfiguration, GroupClientRoleAssignment, MFAChallenge, OIDCClient, OIDCScope, OIDCSession, RefreshToken, RevokedAccessToken, SecurityPolicy, ServiceAccountRoleAssignment, SigningKey, UserClientRoleAssignment, UserMFA, UserPreferences, UserSecurityState
 from .email_verification import EmailAlreadyInUse, EmailConfirmationThrottled, InvalidEmailConfirmation, consume_confirmation_token, get_email_state, inspect_confirmation_token, mask_email, request_email_confirmation
 from .email_backend import email_delivery_enabled
 from .mfa import enable_mfa, generate_totp_secret, hash_recovery_codes, invalidate_web_sessions, matching_counter, provisioning_uri, qr_data_uri, generate_recovery_codes, record_mfa_failure, rotate_security_version, session_binding, verify_mfa
@@ -50,6 +50,13 @@ def safe_next(request,value,default="account"):
     return value if value and url_has_allowed_host_and_scheme(value,{request.get_host()},require_https=request.is_secure()) else reverse(default)
 def is_admin_user(user):
     return user.is_superuser or user.is_staff or any(user.has_perm(f"identity.{code}") for code in ("view_identity_console","manage_users","manage_groups","manage_clients","manage_security","manage_keys","manage_permissions"))
+def preferred_language(user):
+    preferences=UserPreferences.objects.filter(user=user).first() if user and user.pk else None
+    return (preferences.language if preferences else SecurityPolicy.load().default_language).lower()
+def activate_user_language(request,user):
+    language=preferred_language(user)
+    translation.activate(language); request.LANGUAGE_CODE=translation.get_language()
+    return request.LANGUAGE_CODE
 def set_auth_assurance(request,auth_time,methods):
     state,_=UserSecurityState.objects.get_or_create(user=request.user)
     request.session["authentication_time"]=int(auth_time.timestamp()); request.session["authentication_methods"]=methods; request.session["authentication_acr"]="urn:gatelite:acr:2" if any(v in methods for v in ("otp","recovery")) else "urn:gatelite:acr:1"; request.session["authentication_version"]=str(state.authentication_version)
@@ -65,21 +72,21 @@ def login_view(request):
     # A checagem de lockout precede a verificação de senha: uma conta bloqueada
     # não gasta hash nem permite continuar adivinhando durante a janela.
     if request.method=="POST" and UserSecurityState.objects.filter(user__username=request.POST.get("username",""),login_locked_until__gt=timezone.now()).exists():
-        messages.error(request,"Conta temporariamente bloqueada por excesso de tentativas. Tente novamente mais tarde.")
+        messages.error(request,_("Conta temporariamente bloqueada por excesso de tentativas. Tente novamente mais tarde."))
         return render(request,"registration/login.html",{"form":AuthenticationForm(request),"next":request.POST.get("next","")},status=429)
     if request.method=="POST" and form.is_valid():
         user=form.get_user(); next_url=safe_next(request,request.POST.get("next")); must_change_password=UserSecurityState.objects.filter(user=user,must_change_password=True).exists()
         mfa=UserMFA.objects.filter(user=user,enabled=True).first()
         if mfa:
             if mfa.locked_until and mfa.locked_until>timezone.now():
-                form.add_error(None,"Segundo fator temporariamente bloqueado. Tente novamente mais tarde."); return render(request,"registration/login.html",{"form":form,"next":request.POST.get("next","")},status=429)
+                activate_user_language(request,user); form.add_error(None,_("Segundo fator temporariamente bloqueado. Tente novamente mais tarde.")); return render(request,"registration/login.html",{"form":form,"next":request.POST.get("next","")},status=429)
             if must_change_password: request.session["password_change_next"]=next_url; next_url=reverse("change-own-password")
             create_mfa_challenge(request,user,next_url)
             return redirect("login-2fa")
         auth_login(request,user); set_auth_assurance(request,timezone.now(),["pwd"])
         if must_change_password:
             request.session["password_change_next"]=next_url
-            messages.info(request,"Defina uma nova senha para continuar.")
+            activate_user_language(request,user); messages.info(request,_("Defina uma nova senha para continuar."))
             return redirect("change-own-password")
         policy=SecurityPolicy.load(); required=policy.mfa_mode==SecurityPolicy.MFAMode.ALL or (policy.mfa_mode==SecurityPolicy.MFAMode.ADMINS and is_admin_user(user))
         return redirect(reverse("account-mfa-setup")+"?"+urlencode({"next":next_url})) if required else redirect(next_url)
@@ -97,21 +104,24 @@ def login_2fa(request):
     valid_challenge=challenge and not challenge.consumed_at and challenge.expires_at>timezone.now() and challenge.user.is_active and secrets.compare_digest(challenge.password_session_hash,challenge.user.get_session_auth_hash()) and request.session.session_key and secrets.compare_digest(challenge.session_binding,session_binding(request.session.session_key))
     if not valid_challenge:
         request.session.pop("mfa_challenge_id",None)
-        messages.error(request,"A verificação expirou. Entre novamente."); return redirect("login")
+        messages.error(request,_("A verificação expirou. Entre novamente.")); return redirect("login")
     user=challenge.user; form=MFAChallengeForm(request.POST or None)
     if request.method=="POST" and form.is_valid():
         method=verify_mfa(user,form.cleaned_data["code"])
         if method:
             challenge.consumed_at=timezone.now(); challenge.save(update_fields=["consumed_at"]); request.session.pop("mfa_challenge_id",None)
             auth_login(request,user); request.session["mfa_verified_user_id"]=user.pk; set_auth_assurance(request,challenge.auth_time,["pwd",method]); audit(request,"mfa.challenge_succeeded",user,{"method":method})
-            if UserSecurityState.objects.filter(user=user,must_change_password=True).exists(): messages.info(request,"Defina uma nova senha para continuar.")
+            if UserSecurityState.objects.filter(user=user,must_change_password=True).exists(): activate_user_language(request,user); messages.info(request,_("Defina uma nova senha para continuar."))
             return redirect(challenge.next_url)
         challenge.attempts+=1; challenge.save(update_fields=["attempts"]); record_mfa_failure(user)
         audit(request,"mfa.challenge_failed",user,{"attempt":challenge.attempts})
         if challenge.attempts>=5:
             challenge.consumed_at=timezone.now(); challenge.save(update_fields=["consumed_at"]); request.session.pop("mfa_challenge_id",None)
-            messages.error(request,"Muitas tentativas inválidas. Entre novamente."); return redirect("login")
-        form.add_error("code",f"Código inválido, expirado ou já utilizado. Restam {5-challenge.attempts} tentativas.")
+            activate_user_language(request,user); messages.error(request,_("Muitas tentativas inválidas. Entre novamente.")); return redirect("login")
+        remaining=5-challenge.attempts
+        activate_user_language(request,user)
+        form.add_error("code",ngettext("Código inválido, expirado ou já utilizado. Resta %(count)s tentativa.","Código inválido, expirado ou já utilizado. Restam %(count)s tentativas.",remaining)%{"count":remaining})
+    if challenge: activate_user_language(request,challenge.user)
     return render(request,"registration/login_2fa.html",{"form":form})
 def decode_signed_token(raw, verify_audience=False, audience=None):
     # Aceita somente a chave ativa ou aposentadas dentro da janela de retenção,
@@ -324,10 +334,12 @@ def account_profile_edit(request):
             form.add_error("email",_("Não foi possível enviar a confirmação agora. Seus dados de nome foram salvos; tente reenviar em instantes."))
         else:
             audit(request,"profile.updated",request.user,{"email_confirmation_requested":bool(form.confirmation)})
-            if form.confirmation:
-                messages.success(request,_("Dados salvos. Enviamos uma confirmação para o novo e-mail; o endereço atual permanece ativo até a confirmação."))
-            else:
-                messages.success(request,_("Dados do perfil atualizados."))
+            with translation.override(form.cleaned_data["language"].lower()):
+                if form.confirmation:
+                    notice=_("Dados salvos. Enviamos uma confirmação para o novo e-mail; o endereço atual permanece ativo até a confirmação.")
+                else:
+                    notice=_("Dados do perfil atualizados.")
+            messages.success(request,notice)
             return redirect("account")
         if not form.errors:
             return redirect("account-profile-edit")
@@ -345,7 +357,7 @@ def account_email_resend(request):
     state=get_email_state(request.user)
     target=state.pending_email or request.user.email
     if not target:
-        messages.error(request,"Informe um endereço de e-mail antes de solicitar a confirmação.")
+        messages.error(request,_("Informe um endereço de e-mail antes de solicitar a confirmação."))
         return redirect("account-profile-edit")
     try:
         request_email_confirmation(
@@ -353,16 +365,16 @@ def account_email_resend(request):
             ip_address=request.META.get("REMOTE_ADDR"),
         )
     except EmailConfirmationThrottled as exc:
-        messages.info(request,f"A mensagem já foi enviada. Tente novamente em {exc.retry_after} segundos.")
+        messages.info(request,ngettext("A mensagem já foi enviada. Tente novamente em %(count)s segundo.","A mensagem já foi enviada. Tente novamente em %(count)s segundos.",exc.retry_after)%{"count":exc.retry_after})
     except EmailAlreadyInUse:
-        messages.error(request,"Esse endereço pertence a outra conta. Escolha outro e-mail.")
+        messages.error(request,_("Esse endereço pertence a outra conta. Escolha outro e-mail."))
     except Exception:
-        messages.error(request,"Não foi possível enviar a mensagem. Verifique a configuração de e-mail e tente novamente.")
+        messages.error(request,_("Não foi possível enviar a mensagem. Verifique a configuração de e-mail e tente novamente."))
     else:
         if email_delivery_enabled():
-            messages.success(request,"Enviamos um novo link de confirmação.")
+            messages.success(request,_("Enviamos um novo link de confirmação."))
         else:
-            messages.info(request,"O envio de e-mails está desativado; nenhum link foi enviado.")
+            messages.info(request,_("O envio de e-mails está desativado; nenhum link foi enviado."))
     return redirect("account-profile-edit")
 
 
@@ -392,10 +404,11 @@ def account_email_confirm(request):
         else:
             if request.user.is_authenticated:
                 auth_logout(request)
-            messages.success(request,"E-mail confirmado. Entre novamente para continuar.")
+            activate_user_language(request,user); messages.success(request,_("E-mail confirmado. Entre novamente para continuar."))
             response=redirect("login")
     else:
         state=inspect_confirmation_token(raw_token)
+        if state: activate_user_language(request,state.user)
         response=render(request,"account/email_confirm.html",{
             "valid_token":bool(state),
             "confirmed":False,
@@ -455,6 +468,13 @@ class SecurePasswordResetConfirmView(auth_views.PasswordResetConfirmView):
     template_name="registration/password_reset_confirm.html"
     success_url=reverse_lazy("password-reset-complete")
 
+    def get_user(self,uidb64):
+        user=super().get_user(uidb64)
+        if user:
+            language=activate_user_language(self.request,user)
+            self.request.session["password_reset_language"]=language
+        return user
+
     def form_valid(self,form):
         user=form.user
         response=super().form_valid(form)
@@ -467,6 +487,12 @@ class SecurePasswordResetConfirmView(auth_views.PasswordResetConfirmView):
 
 class SecurePasswordResetCompleteView(auth_views.PasswordResetCompleteView):
     template_name="registration/password_reset_complete.html"
+
+    def dispatch(self,request,*args,**kwargs):
+        language=request.session.pop("password_reset_language",None)
+        if language:
+            translation.activate(language); request.LANGUAGE_CODE=translation.get_language()
+        return super().dispatch(request,*args,**kwargs)
 
 @login_required
 def account_mfa(request):
@@ -486,7 +512,7 @@ def account_mfa_setup(request):
     uri=provisioning_uri(request.user,secret); form=MFASetupConfirmForm(request.POST or None)
     if request.method=="POST" and form.is_valid():
         counter=matching_counter(secret,form.cleaned_data["code"])
-        if counter is None: form.add_error("code","Código inválido. Confira o horário do dispositivo e tente novamente.")
+        if counter is None: form.add_error("code",_("Código inválido. Confira o horário do dispositivo e tente novamente."))
         else:
             codes=enable_mfa(request.user,secret,counter); invalidate_web_sessions(request.user,request.session.session_key); request.session.pop("mfa_setup_secret",None); request.session.pop("mfa_setup_started_at",None); request.session["mfa_verified_user_id"]=request.user.pk; set_auth_assurance(request,timezone.now(),["pwd","otp"]); audit(request,"mfa.enabled",request.user)
             return render(request,"account/mfa_recovery.html",{"recovery_codes":codes,"new_setup":True,"next_url":request.session.pop("mfa_setup_next",reverse("account"))})
@@ -497,7 +523,7 @@ def account_mfa_setup(request):
 def account_mfa_disable(request):
     form=PasswordAndMFAForm(request.user,request.POST)
     if form.is_valid():
-        rotate_security_version(request.user); invalidate_web_sessions(request.user,request.session.session_key); UserMFA.objects.filter(user=request.user).delete(); request.session.pop("mfa_verified_user_id",None); audit(request,"mfa.disabled",request.user); messages.success(request,"Autenticação em dois fatores desativada."); return redirect("account-mfa")
+        rotate_security_version(request.user); invalidate_web_sessions(request.user,request.session.session_key); UserMFA.objects.filter(user=request.user).delete(); request.session.pop("mfa_verified_user_id",None); audit(request,"mfa.disabled",request.user); messages.success(request,_("Autenticação em dois fatores desativada.")); return redirect("account-mfa")
     mfa=UserMFA.objects.filter(user=request.user,enabled=True).first()
     return render(request,"account/mfa_status.html",{"mfa":mfa,"disable_form":form,"recovery_form":PasswordAndMFAForm(request.user)},status=400)
 
@@ -517,7 +543,7 @@ def revoke_own_session(request,pk):
     session=get_object_or_404(OIDCSession,pk=pk,user=request.user)
     session.revoked_at=timezone.now(); session.save(update_fields=["revoked_at"])
     RefreshToken.objects.filter(oidc_session=session,revoked_at__isnull=True).update(revoked_at=timezone.now())
-    messages.success(request,"Sessão da aplicação encerrada."); return redirect("account")
+    messages.success(request,_("Sessão da aplicação encerrada.")); return redirect("account")
 
 @login_required
 def change_own_password(request):
@@ -534,7 +560,7 @@ def change_own_password(request):
         if not must_change_password:
             UserSecurityState.objects.filter(user=user,must_change_password=True).update(must_change_password=False)
             rotate_security_version(user)
-        messages.success(request,"Senha alterada com sucesso. As outras sessões foram encerradas.")
+        messages.success(request,_("Senha alterada com sucesso. As outras sessões foram encerradas."))
         return redirect(safe_next(request,request.session.pop("password_change_next",None)))
     template = "account/forced_password_change.html" if must_change_password else "account/password.html"
     return render(request,template,{"form":form,"password_policy":policy})

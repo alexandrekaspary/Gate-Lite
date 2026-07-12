@@ -1,34 +1,35 @@
 {% extends 'registration/auth_base.html' %}
+{% load i18n %}
 
-{% block title %}Confirmar e-mail · GateLite{% endblock %}
-{% block brand_eyebrow %}Identidade verificada{% endblock %}
-{% block brand_heading %}Seu e-mail também protege sua conta.{% endblock %}
-{% block brand_intro %}A confirmação garante que somente você controle o endereço usado para recuperar o acesso e receber alertas de segurança.{% endblock %}
+{% block title %}{% trans "Confirmar e-mail" %} · GateLite{% endblock %}
+{% block brand_eyebrow %}{% trans "Identidade verificada" %}{% endblock %}
+{% block brand_heading %}{% trans "Seu e-mail também protege sua conta." %}{% endblock %}
+{% block brand_intro %}{% trans "A confirmação garante que somente você controle o endereço usado para recuperar o acesso e receber alertas de segurança." %}{% endblock %}
 {% block brand_features %}
-<span><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Validação individual e temporária</span>
-<span><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Recuperação de senha protegida</span>
-<span><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Endereço nunca exposto na página</span>
+<span><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>{% trans "Validação individual e temporária" %}</span>
+<span><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>{% trans "Recuperação de senha protegida" %}</span>
+<span><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>{% trans "Endereço nunca exposto na página" %}</span>
 {% endblock %}
 
 {% block content %}
 {% if confirmed %}
 <div class="auth-result-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M20 6 9 17l-5-5"/></svg></div>
-<p class="eyebrow">Validação concluída</p>
-<h2>Seu e-mail foi confirmado</h2>
-<p class="login-intro">O novo endereço já está ativo e poderá ser usado nas comunicações de segurança e na recuperação da sua conta.</p>
-{% if request.user.is_authenticated %}<a class="btn primary login-submit" href="{% url 'account' %}">Voltar à minha conta<svg aria-hidden="true" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></a>{% else %}<a class="btn primary login-submit" href="{% url 'login' %}">Entrar no GateLite<svg aria-hidden="true" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></a>{% endif %}
+<p class="eyebrow">{% trans "Validação concluída" %}</p>
+<h2>{% trans "Seu e-mail foi confirmado" %}</h2>
+<p class="login-intro">{% trans "O novo endereço já está ativo e poderá ser usado nas comunicações de segurança e na recuperação da sua conta." %}</p>
+{% if request.user.is_authenticated %}<a class="btn primary login-submit" href="{% url 'account' %}">{% trans "Voltar à minha conta" %}<svg aria-hidden="true" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></a>{% else %}<a class="btn primary login-submit" href="{% url 'login' %}">{% trans "Entrar no GateLite" %}<svg aria-hidden="true" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></a>{% endif %}
 {% elif valid_token %}
 <div class="auth-result-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/><path d="m4 7 8 6 8-6"/><path d="m9 16 2 2 4-4"/></svg></div>
-<p class="eyebrow">Link validado</p>
-<h2>Confirme seu endereço</h2>
-<p class="login-intro">Confirme que <strong>{{ target_email }}</strong> pertence a você. Depois disso, o endereço poderá ser usado para recuperar sua conta.</p>
-<form method="post" class="form-stack">{% csrf_token %}<input type="hidden" name="token" value="{{ token }}"><button class="btn primary login-submit" type="submit">Confirmar meu e-mail<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></button></form>
-<div class="auth-secondary-action">{% if request.user.is_authenticated %}<a href="{% url 'account-profile-edit' %}"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>Voltar ao perfil</a>{% else %}<a href="{% url 'login' %}"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>Voltar para o login</a>{% endif %}</div>
+<p class="eyebrow">{% trans "Link validado" %}</p>
+<h2>{% trans "Confirme seu endereço" %}</h2>
+<p class="login-intro">{% blocktrans %}Confirme que <strong>{{ target_email }}</strong> pertence a você. Depois disso, o endereço poderá ser usado para recuperar sua conta.{% endblocktrans %}</p>
+<form method="post" class="form-stack">{% csrf_token %}<input type="hidden" name="token" value="{{ token }}"><button class="btn primary login-submit" type="submit">{% trans "Confirmar meu e-mail" %}<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></button></form>
+<div class="auth-secondary-action">{% if request.user.is_authenticated %}<a href="{% url 'account-profile-edit' %}"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>{% trans "Voltar ao perfil" %}</a>{% else %}<a href="{% url 'login' %}"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>{% trans "Voltar para o login" %}</a>{% endif %}</div>
 {% else %}
 <div class="auth-result-icon is-invalid"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6M9 9l6 6"/></svg></div>
-<p class="eyebrow">Link indisponível</p>
-<h2>Não foi possível validar este link</h2>
-<p class="login-intro">Ele pode ter expirado ou já ter sido utilizado. Entre na sua conta e solicite uma nova mensagem pelo perfil.</p>
-<a class="btn primary login-submit" href="{% url 'login' %}">Ir para o login<svg aria-hidden="true" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></a>
+<p class="eyebrow">{% trans "Link indisponível" %}</p>
+<h2>{% trans "Não foi possível validar este link" %}</h2>
+<p class="login-intro">{% trans "Ele pode ter expirado ou já ter sido utilizado. Entre na sua conta e solicite uma nova mensagem pelo perfil." %}</p>
+<a class="btn primary login-submit" href="{% url 'login' %}">{% trans "Ir para o login" %}<svg aria-hidden="true" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></a>
 {% endif %}
 {% endblock %}

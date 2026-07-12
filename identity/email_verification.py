@@ -10,9 +10,10 @@ from django.core.validators import validate_email
 from django.db import IntegrityError, transaction
 from django.template.loader import render_to_string
 from django.urls import reverse
-from django.utils import timezone
+from django.utils import timezone, translation
+from django.utils.translation import gettext as _, ngettext
 
-from .models import AuditEvent, EmailConfiguration, SecurityPolicy, UserEmailState
+from .models import AuditEvent, EmailConfiguration, SecurityPolicy, UserEmailState, UserPreferences
 from .email_backend import email_delivery_enabled
 
 
@@ -27,7 +28,7 @@ class EmailAlreadyInUse(EmailConfirmationError):
 class EmailConfirmationThrottled(EmailConfirmationError):
     def __init__(self, retry_after):
         self.retry_after = max(1, int(retry_after))
-        super().__init__(f"Tente novamente em {self.retry_after} segundos.")
+        super().__init__(ngettext("Tente novamente em %(count)s segundo.","Tente novamente em %(count)s segundos.",self.retry_after)%{"count":self.retry_after})
 
 
 class InvalidEmailConfirmation(EmailConfirmationError):
@@ -80,11 +81,14 @@ def _send_confirmation_message(user, target_email, raw_token, request=None):
         "expires_hours": max(1, (timeout + 3599) // 3600),
         "site_name": "GateLite",
     }
-    subject = "".join(render_to_string(
-        "emails/email_confirmation_subject.txt", context
-    ).splitlines()).strip()
-    text_body = render_to_string("emails/email_confirmation.txt", context)
-    html_body = render_to_string("emails/email_confirmation.html", context)
+    preferences=UserPreferences.objects.filter(user=user).first()
+    language=(preferences.language if preferences else SecurityPolicy.load().default_language).lower()
+    with translation.override(language):
+        subject = "".join(render_to_string(
+            "emails/email_confirmation_subject.txt", context
+        ).splitlines()).strip()
+        text_body = render_to_string("emails/email_confirmation.txt", context)
+        html_body = render_to_string("emails/email_confirmation.html", context)
     message = EmailMultiAlternatives(
         subject=subject,
         body=text_body,
@@ -99,7 +103,7 @@ def request_email_confirmation(user, email, request=None, actor=None, ip_address
     """Create one expiring request; the raw token exists only in the email."""
     target = normalize_email(email)
     if not email_available_for_user(target, user):
-        raise EmailAlreadyInUse("Este endereço de e-mail já está em uso.")
+        raise EmailAlreadyInUse(_("Este endereço de e-mail já está em uso."))
     if not email_delivery_enabled():
         return EmailConfirmationRequest(sent=False, pending_email=target)
 
@@ -159,7 +163,7 @@ def inspect_confirmation_token(raw_token):
 
 def consume_confirmation_token(raw_token, actor=None, ip_address=None):
     if not raw_token:
-        raise InvalidEmailConfirmation("Link de confirmação inválido ou expirado.")
+        raise InvalidEmailConfirmation(_("Link de confirmação inválido ou expirado."))
     digest = hashlib.sha256(raw_token.encode()).hexdigest()
     now = timezone.now()
     try:
@@ -173,12 +177,12 @@ def consume_confirmation_token(raw_token, actor=None, ip_address=None):
                 or not state.confirmation_expires_at
                 or state.confirmation_expires_at <= now
             ):
-                raise InvalidEmailConfirmation("Link de confirmação inválido ou expirado.")
+                raise InvalidEmailConfirmation(_("Link de confirmação inválido ou expirado."))
 
             user = state.user
             target = normalize_email(state.pending_email)
             if not email_available_for_user(target, user):
-                raise EmailAlreadyInUse("Este endereço de e-mail já está em uso.")
+                raise EmailAlreadyInUse(_("Este endereço de e-mail já está em uso."))
 
             previous = (user.email or "").strip().casefold()
             # QuerySet.update intentionally avoids a signal observing a half-updated
@@ -198,7 +202,7 @@ def consume_confirmation_token(raw_token, actor=None, ip_address=None):
                 "confirmation_sent_at", "updated_at",
             ])
     except IntegrityError as exc:
-        raise EmailAlreadyInUse("Este endereço de e-mail já está em uso.") from exc
+        raise EmailAlreadyInUse(_("Este endereço de e-mail já está em uso.")) from exc
 
     from .mfa import invalidate_web_sessions, rotate_security_version
     rotate_security_version(user)

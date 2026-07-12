@@ -1,6 +1,8 @@
 (() => {
   'use strict';
 
+  const t = window.gettext || ((value) => value);
+
   const supportsDialog = typeof HTMLDialogElement === 'function';
   let confirmDialog = null;
   let pendingForm = null;
@@ -14,7 +16,7 @@
       '<h2 id="confirm-dialog-title"></h2>' +
       '<p id="confirm-dialog-message"></p>' +
       '<div class="confirm-dialog-actions">' +
-      '<button type="button" class="btn" data-dialog-cancel>Cancelar</button>' +
+      `<button type="button" class="btn" data-dialog-cancel>${t('Cancelar')}</button>` +
       '<button type="button" class="btn" data-dialog-confirm></button>' +
       '</div>';
     dialog.querySelector('[data-dialog-cancel]').addEventListener('click', () => dialog.close());
@@ -40,10 +42,10 @@
       event.preventDefault();
       confirmDialog = confirmDialog || buildConfirmDialog();
       pendingForm = form;
-      confirmDialog.querySelector('#confirm-dialog-title').textContent = form.dataset.confirmTitle || 'Confirmar ação';
+      confirmDialog.querySelector('#confirm-dialog-title').textContent = form.dataset.confirmTitle || t('Confirmar ação');
       confirmDialog.querySelector('#confirm-dialog-message').textContent = form.dataset.confirm;
       const confirmButton = confirmDialog.querySelector('[data-dialog-confirm]');
-      confirmButton.textContent = form.dataset.confirmLabel || 'Confirmar';
+      confirmButton.textContent = form.dataset.confirmLabel || t('Confirmar');
       confirmButton.classList.toggle('danger', 'confirmDanger' in form.dataset);
       confirmButton.classList.toggle('primary', !('confirmDanger' in form.dataset));
       confirmDialog.showModal();
@@ -93,13 +95,13 @@
       try {
         await writeClipboard(value);
         button.classList.add('copied');
-        if (label) label.textContent = 'Copiado';
+        if (label) label.textContent = t('Copiado');
         window.setTimeout(() => {
           button.classList.remove('copied');
           if (label) label.textContent = original;
         }, 1800);
       } catch (_) {
-        if (label) label.textContent = 'Não foi possível copiar';
+        if (label) label.textContent = t('Não foi possível copiar');
       }
     });
   });
@@ -120,13 +122,13 @@
     const button = document.createElement('button');
     button.type = 'button';
     button.className = 'password-toggle';
-    button.setAttribute('aria-label', 'Mostrar senha');
+    button.setAttribute('aria-label', t('Mostrar senha'));
     button.setAttribute('aria-pressed', 'false');
     button.innerHTML = eyeIcon;
     button.addEventListener('click', () => {
       const visible = input.type === 'text';
       input.type = visible ? 'password' : 'text';
-      button.setAttribute('aria-label', visible ? 'Mostrar senha' : 'Ocultar senha');
+      button.setAttribute('aria-label', visible ? t('Mostrar senha') : t('Ocultar senha'));
       button.setAttribute('aria-pressed', String(!visible));
       button.innerHTML = visible ? eyeIcon : eyeOffIcon;
     });

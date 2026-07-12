@@ -6,7 +6,7 @@ from django.contrib.auth.forms import PasswordResetForm, SetPasswordForm, UserCr
 from django.contrib.auth.models import Group, Permission, User
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
-from django.utils import timezone
+from django.utils import timezone, translation
 from django.utils.translation import gettext_lazy as _
 from .email_verification import EmailConfirmationError, EmailConfirmationThrottled, email_available_for_user, normalize_email, request_email_confirmation
 from .models import LANGUAGE_CHOICES, ClientRole, ClientScopeAssignment, ClientURI, ClientWebOrigin, EmailConfiguration, OIDCClient, OIDCScope, SecurityPolicy, UserEmailState, UserPreferences, UserSecurityState, generate_client_id, timezone_choices
@@ -238,6 +238,11 @@ class VerifiedEmailPasswordResetForm(PasswordResetForm):
                     continue
                 UserEmailState.objects.filter(pk=state.pk).update(password_reset_sent_at=now,updated_at=now)
                 yield user
+
+    def send_mail(self,subject_template_name,email_template_name,context,from_email,to_email,html_email_template_name=None):
+        language=user_preference_defaults(context.get("user"))[0]
+        with translation.override(language.lower()):
+            return super().send_mail(subject_template_name,email_template_name,context,from_email,to_email,html_email_template_name)
 
 
 class SecureSetPasswordForm(SetPasswordForm):

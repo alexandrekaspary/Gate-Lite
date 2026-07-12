@@ -1,10 +1,10 @@
-Olá, {{ user.get_full_name|default:user.get_username }}.
+{% load i18n %}{% blocktrans with name=user.get_full_name|default:user.get_username %}Olá, {{ name }}.{% endblocktrans %}
 
-Você solicitou o uso de {{ target_email }} como e-mail da sua conta {{ site_name }}.
+{% blocktrans %}Você solicitou o uso de {{ target_email }} como e-mail da sua conta {{ site_name }}.{% endblocktrans %}
 
-Confirme que este endereço pertence a você acessando o link abaixo:
+{% trans "Confirme que este endereço pertence a você acessando o link abaixo:" %}
 {{ confirmation_url }}
 
-O link expira em {{ expires_hours }} horas. Se você não solicitou esta alteração, ignore esta mensagem; o endereço atual continuará associado à conta.
+{% blocktrans count hours=expires_hours %}O link expira em {{ hours }} hora. Se você não solicitou esta alteração, ignore esta mensagem; o endereço atual continuará associado à conta.{% plural %}O link expira em {{ hours }} horas. Se você não solicitou esta alteração, ignore esta mensagem; o endereço atual continuará associado à conta.{% endblocktrans %}
 
 {{ site_name }} · Identity Platform
