@@ -493,6 +493,11 @@ class SecurePasswordResetConfirmView(auth_views.PasswordResetConfirmView):
             self.request.session["password_reset_language"]=language
         return user
 
+    def get_context_data(self,**kwargs):
+        context=super().get_context_data(**kwargs)
+        context["password_policy"]=SecurityPolicy.load()
+        return context
+
     def form_valid(self,form):
         user=form.user
         response=super().form_valid(form)
