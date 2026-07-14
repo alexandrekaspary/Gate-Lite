@@ -3,6 +3,14 @@
 Todas as mudanças relevantes deste projeto são documentadas neste arquivo.
 O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o versionamento segue [SemVer](https://semver.org/lang/pt-BR/).
 
+## [Não lançado]
+
+### Adicionado
+
+- Tela pública de cadastro (`/register/`) para que visitantes criem a própria conta, com o mesmo estilo visual das telas de login e recuperação de senha.
+- Opção **Habilitar cadastro de novos usuários** e **Grupos padrão do cadastro** na política de segurança, controlando a disponibilidade da tela e os grupos concedidos automaticamente a quem se cadastra.
+- Traduções em inglês e espanhol para a tela de cadastro e o link correspondente no login.
+
 ## [1.0.1] - 2026-07-11
 
 ### Adicionado
@@ -39,6 +47,3 @@ Primeira versão estável do GateLite: provedor de identidade e SSO OpenID Conne
 - Dockerfile com Gunicorn, `collectstatic` no build, usuário sem privilégios e migrations automáticas na inicialização.
 - Suporte a proxy TLS via `TRUST_PROXY_SSL_HEADER`.
 - 85 testes automatizados cobrindo protocolo, segurança, RBAC, MFA, contas e interface.
-
-[1.0.1]: https://github.com/alexandrekaspary/Gate-Lite/releases/tag/v1.0.1
-[1.0.0]: https://github.com/alexandrekaspary/Gate-Lite/releases/tag/v1.0.0

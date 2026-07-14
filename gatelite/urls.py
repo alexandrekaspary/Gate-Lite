@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.contrib.auth import views as auth_views
 from django.urls import include, path
 from django.views.i18n import JavaScriptCatalog
-from identity.views import SecurePasswordResetCompleteView, SecurePasswordResetConfirmView, VerifiedPasswordResetDoneView, VerifiedPasswordResetView, account, account_email_confirm, account_email_resend, account_mfa, account_mfa_disable, account_mfa_recovery, account_mfa_setup, account_profile_edit, admin_login_redirect, change_own_password, discovery, login_2fa, login_view, revoke_own_session
+from identity.views import SecurePasswordResetCompleteView, SecurePasswordResetConfirmView, VerifiedPasswordResetDoneView, VerifiedPasswordResetView, account, account_email_confirm, account_email_resend, account_mfa, account_mfa_disable, account_mfa_recovery, account_mfa_setup, account_profile_edit, admin_login_redirect, change_own_password, discovery, login_2fa, login_view, register_view, revoke_own_session
 
 urlpatterns = [
     path(".well-known/openid-configuration", discovery, name="openid-configuration"),
@@ -11,6 +11,7 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("login/", login_view, name="login"),
     path("login/2fa/", login_2fa, name="login-2fa"),
+    path("register/", register_view, name="register"),
     path("password/reset/", VerifiedPasswordResetView.as_view(), name="password-reset"),
     path("password/reset/done/", VerifiedPasswordResetDoneView.as_view(), name="password-reset-done"),
     path("password/reset/<uidb64>/<token>/", SecurePasswordResetConfirmView.as_view(), name="password-reset-confirm"),

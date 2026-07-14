@@ -4,8 +4,8 @@
   const t = window.gettext || ((value) => value);
 
   const policy = document.querySelector('[data-password-policy]');
-  const password = document.querySelector('[name="new_password1"]');
-  const confirmation = document.querySelector('[name="new_password2"]');
+  const password = document.querySelector('[name="new_password1"], [name="password1"]');
+  const confirmation = document.querySelector('[name="new_password2"], [name="password2"]');
   if (!policy || !password || !confirmation) return;
 
   const rules = {

@@ -15,6 +15,7 @@
       <a href="#email"><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></svg>E-mail e recuperação</a>
       <a href="#lockout"><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="10" rx="1"/><path d="M7 11V7a5 5 0 0 1 10 0v4M12 15v2"/></svg>Proteção de login</a>
       <a href="#localization"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10Z"/></svg>Localização</a>
+      <a href="#registration"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M19 8v6M22 11h-6"/></svg>Cadastro de usuários</a>
       <p class="nav-label">Recursos</p>
       <a href="#access"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/></svg>Acessos e chaves</a>
     </nav>
@@ -159,6 +160,32 @@
       <div class="info-callout">
         <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
         <p><strong>Usuários existentes não são alterados.</strong> Os valores servem apenas de padrão para novos cadastros; cada usuário mantém a própria preferência.</p>
+      </div>
+    </section>
+
+    <section class="panel settings-section" id="registration">
+      <div class="settings-section-header">
+        <span class="section-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M19 8v6M22 11h-6"/></svg></span>
+        <div><p class="eyebrow">Autosserviço</p><h2>Cadastro de usuários</h2><p>Permita que visitantes criem a própria conta e defina os grupos concedidos automaticamente.</p></div>
+      </div>
+
+      <div class="settings-grid">
+        {% include 'console/_setting_field.html' with field=form.registration_enabled wrapper='setting-field setting-full' only %}
+      </div>
+      {% if form.registration_default_groups.field.queryset.exists %}
+      <div class="settings-grid">
+        {% include 'console/_setting_field.html' with field=form.registration_default_groups wrapper='setting-field setting-full' only %}
+      </div>
+      {% else %}
+      <div class="info-callout">
+        <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+        <p><strong>Nenhum grupo cadastrado ainda.</strong> Crie grupos em <a href="{% url 'console:list' 'groups' %}">Grupos</a> para poder concedê-los automaticamente no cadastro.</p>
+      </div>
+      {% endif %}
+
+      <div class="info-callout">
+        <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+        <p><strong>A tela pública fica em <code>/register/</code>.</strong> Com o cadastro desativado, o link some do login e a URL redireciona de volta para o login.</p>
       </div>
     </section>
 

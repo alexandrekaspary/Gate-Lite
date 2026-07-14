@@ -248,6 +248,8 @@ class SecurityPolicy(models.Model):
     login_lockout_seconds = models.PositiveIntegerField(default=300, help_text="Segundos",validators=[MinValueValidator(30),MaxValueValidator(86400)])
     default_language = models.CharField(max_length=16, choices=LANGUAGE_CHOICES, default="pt-BR")
     default_timezone = models.CharField(max_length=64, choices=timezone_choices, default="America/Sao_Paulo")
+    registration_enabled = models.BooleanField(default=False, help_text="Permite que qualquer visitante crie a própria conta na tela de cadastro.")
+    registration_default_groups = models.ManyToManyField("auth.Group", blank=True, related_name="registration_defaults", help_text="Concedidos automaticamente a quem se cadastrar.")
 
     class Meta: verbose_name = "Política de segurança"
     @classmethod

@@ -33,7 +33,7 @@ from django.views.decorators.debug import sensitive_post_parameters
 from django.views.decorators.http import require_http_methods, require_POST
 from .crypto import generate_key
 from .crypto import decrypt_value, encrypt_value
-from .forms import AccountProfileForm, ClientForm, ClientRoleForm, EmailConfigurationForm, GroupForm, MFAChallengeForm, MFASetupConfirmForm, PasswordAndMFAForm, PermissionForm, SecurityPolicyForm, SecureSetPasswordForm, UserCreateForm, UserEditForm, VerifiedEmailPasswordResetForm
+from .forms import AccountProfileForm, ClientForm, ClientRoleForm, EmailConfigurationForm, GroupForm, MFAChallengeForm, MFASetupConfirmForm, PasswordAndMFAForm, PermissionForm, SecurityPolicyForm, SecureSetPasswordForm, UserCreateForm, UserEditForm, UserRegistrationForm, VerifiedEmailPasswordResetForm
 from .models import AuditEvent, AuthorizationCode, ClientRole, EmailConfiguration, GroupClientRoleAssignment, MFAChallenge, OIDCClient, OIDCScope, OIDCSession, RefreshToken, RevokedAccessToken, SecurityPolicy, ServiceAccountRoleAssignment, SigningKey, UserClientRoleAssignment, UserMFA, UserPreferences, UserSecurityState
 from .email_verification import EmailAlreadyInUse, EmailConfirmationThrottled, InvalidEmailConfirmation, consume_confirmation_token, get_email_state, inspect_confirmation_token, mask_email, request_email_confirmation
 from .email_backend import email_delivery_enabled
@@ -71,9 +71,10 @@ def login_view(request):
     form=AuthenticationForm(request,data=request.POST or None)
     # A checagem de lockout precede a verificação de senha: uma conta bloqueada
     # não gasta hash nem permite continuar adivinhando durante a janela.
+    registration_enabled=SecurityPolicy.load().registration_enabled
     if request.method=="POST" and UserSecurityState.objects.filter(user__username=request.POST.get("username",""),login_locked_until__gt=timezone.now()).exists():
         messages.error(request,_("Conta temporariamente bloqueada por excesso de tentativas. Tente novamente mais tarde."))
-        return render(request,"registration/login.html",{"form":AuthenticationForm(request),"next":request.POST.get("next","")},status=429)
+        return render(request,"registration/login.html",{"form":AuthenticationForm(request),"next":request.POST.get("next",""),"registration_enabled":registration_enabled},status=429)
     if request.method=="POST" and form.is_valid():
         user=form.get_user(); next_url=safe_next(request,request.POST.get("next")); must_change_password=UserSecurityState.objects.filter(user=user,must_change_password=True).exists()
         mfa=UserMFA.objects.filter(user=user,enabled=True).first()
@@ -90,7 +91,7 @@ def login_view(request):
             return redirect("change-own-password")
         policy=SecurityPolicy.load(); required=policy.mfa_mode==SecurityPolicy.MFAMode.ALL or (policy.mfa_mode==SecurityPolicy.MFAMode.ADMINS and is_admin_user(user))
         return redirect(reverse("account-mfa-setup")+"?"+urlencode({"next":next_url})) if required else redirect(next_url)
-    return render(request,"registration/login.html",{"form":form,"next":request.POST.get("next") or request.GET.get("next","")})
+    return render(request,"registration/login.html",{"form":form,"next":request.POST.get("next") or request.GET.get("next",""),"registration_enabled":registration_enabled})
 
 def admin_login_redirect(request):
     """Keep the Django Admin from becoming an alternate password-only login."""
@@ -98,6 +99,20 @@ def admin_login_redirect(request):
     next_url=safe_next(request,requested_next) if requested_next else "/admin/"
     if request.user.is_authenticated: return redirect(next_url)
     return redirect(reverse("login")+"?"+urlencode({"next":next_url}))
+
+def register_view(request):
+    if request.user.is_authenticated: return redirect("account")
+    policy=SecurityPolicy.load()
+    if not policy.registration_enabled:
+        messages.error(request,_("O cadastro de novos usuários está desativado no momento."))
+        return redirect("login")
+    form=UserRegistrationForm(request.POST or None)
+    if request.method=="POST" and form.is_valid():
+        user=form.save()
+        audit(request,"user.self_registered",user)
+        messages.success(request,_("Conta criada com sucesso. Entre com seu usuário e senha para continuar."))
+        return redirect("login")
+    return render(request,"registration/register.html",{"form":form,"password_policy":policy})
 
 def login_2fa(request):
     challenge_id=request.session.get("mfa_challenge_id"); challenge=MFAChallenge.objects.select_related("user").filter(pk=challenge_id).first() if challenge_id else None

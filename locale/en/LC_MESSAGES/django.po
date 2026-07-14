@@ -1042,3 +1042,54 @@ msgid "Tente novamente em %(count)s segundo."
 msgid_plural "Tente novamente em %(count)s segundos."
 msgstr[0] "Try again in %(count)s second."
 msgstr[1] "Try again in %(count)s seconds."
+
+#: identity/forms.py identity/views.py
+msgid "Não pode ser alterado depois de criada a conta."
+msgstr "Cannot be changed after the account is created."
+
+msgid "O cadastro de novos usuários está desativado no momento."
+msgstr "New user registration is currently disabled."
+
+msgid "Conta criada com sucesso. Entre com seu usuário e senha para continuar."
+msgstr "Account created successfully. Sign in with your username and password to continue."
+
+#: templates/registration/register.html
+msgid "Criar conta"
+msgstr "Create account"
+
+msgid "Novo por aqui?"
+msgstr "New here?"
+
+msgid "Crie sua conta em poucos passos."
+msgstr "Create your account in a few steps."
+
+msgid "Depois de cadastrado, você usa o mesmo login em todas as aplicações integradas ao GateLite."
+msgstr "Once registered, you use the same login across every application integrated with GateLite."
+
+msgid "Um único acesso para todas as aplicações"
+msgstr "A single sign-on for every application"
+
+msgid "Confirmação de e-mail antes do uso pleno"
+msgstr "Email confirmation before full access"
+
+msgid "Os requisitos de senha são verificados pelo servidor"
+msgstr "Password requirements are verified by the server"
+
+msgid "Cadastro"
+msgstr "Registration"
+
+msgid "Crie sua conta"
+msgstr "Create your account"
+
+msgid "Preencha seus dados para começar a usar o GateLite."
+msgstr "Fill in your details to start using GateLite."
+
+msgid "Confirme a senha"
+msgstr "Confirm the password"
+
+msgid "Já tem uma conta? Entrar"
+msgstr "Already have an account? Sign in"
+
+#: templates/registration/login.html
+msgid "Não tem uma conta? Cadastre-se"
+msgstr "Don't have an account? Sign up"

@@ -59,6 +59,7 @@
           <button class="btn primary login-submit" type="submit">{% trans "Entrar com segurança" %}<svg aria-hidden="true" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></button>
           {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
         </form>
+        {% if registration_enabled %}<div class="auth-secondary-action"><a href="{% url 'register' %}">{% trans "Não tem uma conta? Cadastre-se" %}<svg aria-hidden="true" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></a></div>{% endif %}
         <div class="login-security-note"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/></svg><span>{% trans "Sua conexão e suas credenciais são protegidas." %}</span></div>
       </div>
     </section>

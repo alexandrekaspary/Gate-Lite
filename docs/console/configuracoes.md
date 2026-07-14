@@ -59,6 +59,15 @@ A variável de ambiente `EMAIL_ENABLED=0` desliga os envios globalmente, indepen
 | **Validade da recuperação de senha** | Prazo do link de redefinição. A validade é conferida **ao abrir o link**, então ajustar a política afeta links já enviados. |
 | **Intervalo mínimo entre recuperações** | Anti-bombardeio: pedidos repetidos dentro da janela não reenviam e-mail, com resposta pública idêntica (sem revelar se a conta existe). |
 
+## Cadastro de usuários
+
+| Campo | O que controla |
+|---|---|
+| **Habilitar cadastro de novos usuários** | Publica a tela `/register/` e o link "Cadastre-se" no login. Desligado por padrão: com a opção desmarcada, a URL redireciona para o login e o link some da tela de login. |
+| **Grupos padrão do cadastro** | Grupos concedidos automaticamente a quem se cadastra pela tela pública. O usuário herda as roles de clients e permissões administrativas desses grupos, como qualquer outro membro. |
+
+A tela pública pede usuário, nome, sobrenome, e-mail e senha; segue a mesma política de senha desta página e recebe o idioma/fuso horário padrão definidos em Localização, acima. Como em qualquer criação de usuário com e-mail, a confirmação é enviada automaticamente. A conta fica ativa imediatamente — a confirmação de e-mail não bloqueia o login, apenas a claim `email_verified`. Veja também [Usuários](usuarios).
+
 ## Proteção contra força bruta
 
 | Campo | O que controla |

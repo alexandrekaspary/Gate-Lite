@@ -66,6 +66,14 @@ Além dos campos de criação, a edição oferece:
 - **Redefinir 2FA** — remove o autenticador e os recovery codes. Use quando o usuário perdeu o dispositivo; ele configura o TOTP de novo no próximo login (conforme a política).
 - **E-mail** — trocar o endereço aqui deixa a confirmação **pendente**: o endereço só passa a valer como confirmado depois que o dono clicar no link. A claim `email_verified` reflete exatamente isso.
 
+## Cadastro público
+
+Além da criação pelo console, visitantes podem criar a própria conta em `/register/` quando a opção **Habilitar cadastro de novos usuários** estiver ativa em [Configurações](configuracoes). A tela pede usuário, nome, sobrenome, e-mail e senha — sem acesso a grupos, roles ou permissões administrativas.
+
+- A conta nasce com os **Grupos padrão do cadastro** definidos em Configurações, exatamente como se um administrador os tivesse marcado na criação.
+- Idioma, fuso horário, confirmação de e-mail e política de senha seguem os mesmos padrões e comportamentos automáticos de uma conta criada no console.
+- Com o cadastro desativado, a URL redireciona para o login e o link "Cadastre-se" some da tela de login.
+
 ## Comportamentos automáticos
 
 - **Confirmação de e-mail**: criada a conta com e-mail, um link temporário e de uso único é enviado. O reenvio respeita o intervalo configurado.

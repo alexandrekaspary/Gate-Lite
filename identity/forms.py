@@ -173,6 +173,32 @@ class UserEditForm(StyledFormMixin, forms.ModelForm):
         return user
 
 
+class UserRegistrationForm(StyledFormMixin, UserCreationForm):
+    field_order = ("username", "first_name", "last_name", "email", "password1", "password2")
+    email = forms.EmailField(required=True, label=_("E-mail"))
+    class Meta(UserCreationForm.Meta):
+        fields = ("username", "first_name", "last_name", "email")
+        labels = {"first_name": _("Nome"), "last_name": _("Sobrenome")}
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["username"].help_text = _("Não pode ser alterado depois de criada a conta.")
+    def clean_email(self):
+        email = normalize_email(self.cleaned_data.get("email", ""))
+        if User.objects.filter(email__iexact=email).exists():
+            raise forms.ValidationError(_("Este endereço de e-mail já está em uso."))
+        return email
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        user.email = self.cleaned_data["email"]
+        if commit:
+            user.save()
+            grant_basic_permissions(user)
+            policy = SecurityPolicy.load()
+            user.groups.set(policy.registration_default_groups.all())
+            UserPreferences.objects.update_or_create(user=user, defaults={"language": policy.default_language, "timezone": policy.default_timezone})
+        return user
+
+
 class AccountProfileForm(StyledFormMixin, forms.ModelForm):
     email=forms.EmailField(required=True,label=_("E-mail"))
     language=forms.ChoiceField(choices=LANGUAGE_CHOICES,required=False,label=_("Idioma"))
@@ -384,9 +410,9 @@ class ClientRoleForm(StyledFormMixin, forms.ModelForm):
 class SecurityPolicyForm(StyledFormMixin, forms.ModelForm):
     class Meta:
         model = SecurityPolicy
-        fields = ("password_min_length","password_require_uppercase","password_require_lowercase","password_require_number","password_require_special","mfa_mode","access_token_ttl","id_token_ttl","refresh_token_ttl","sso_session_ttl","client_secret_grace_period","email_confirmation_timeout","email_confirmation_resend_seconds","password_reset_timeout","password_reset_resend_seconds","login_max_attempts","login_lockout_seconds","default_language","default_timezone")
-        labels = {"password_min_length":"Tamanho mínimo","password_require_uppercase":"Exigir letra maiúscula","password_require_lowercase":"Exigir letra minúscula","password_require_number":"Exigir número","password_require_special":"Exigir caractere especial","mfa_mode":"Política de autenticação em dois fatores","access_token_ttl":"Validade do access token","id_token_ttl":"Validade do ID token","refresh_token_ttl":"Validade máxima do refresh token","sso_session_ttl":"Validade da sessão SSO","client_secret_grace_period":"Sobreposição de secrets na rotação","email_confirmation_timeout":"Validade da confirmação de e-mail","email_confirmation_resend_seconds":"Intervalo mínimo de reenvio","password_reset_timeout":"Validade da recuperação de senha","password_reset_resend_seconds":"Intervalo mínimo entre recuperações","login_max_attempts":"Tentativas de senha antes do bloqueio","login_lockout_seconds":"Duração do bloqueio de login","default_language":"Idioma padrão","default_timezone":"Fuso horário padrão"}
-        help_texts = {"default_language":"Pré-selecionado ao cadastrar novos usuários.","default_timezone":"Pré-selecionado ao cadastrar novos usuários."}
+        fields = ("password_min_length","password_require_uppercase","password_require_lowercase","password_require_number","password_require_special","mfa_mode","access_token_ttl","id_token_ttl","refresh_token_ttl","sso_session_ttl","client_secret_grace_period","email_confirmation_timeout","email_confirmation_resend_seconds","password_reset_timeout","password_reset_resend_seconds","login_max_attempts","login_lockout_seconds","default_language","default_timezone","registration_enabled","registration_default_groups")
+        labels = {"password_min_length":"Tamanho mínimo","password_require_uppercase":"Exigir letra maiúscula","password_require_lowercase":"Exigir letra minúscula","password_require_number":"Exigir número","password_require_special":"Exigir caractere especial","mfa_mode":"Política de autenticação em dois fatores","access_token_ttl":"Validade do access token","id_token_ttl":"Validade do ID token","refresh_token_ttl":"Validade máxima do refresh token","sso_session_ttl":"Validade da sessão SSO","client_secret_grace_period":"Sobreposição de secrets na rotação","email_confirmation_timeout":"Validade da confirmação de e-mail","email_confirmation_resend_seconds":"Intervalo mínimo de reenvio","password_reset_timeout":"Validade da recuperação de senha","password_reset_resend_seconds":"Intervalo mínimo entre recuperações","login_max_attempts":"Tentativas de senha antes do bloqueio","login_lockout_seconds":"Duração do bloqueio de login","default_language":"Idioma padrão","default_timezone":"Fuso horário padrão","registration_enabled":"Habilitar cadastro de novos usuários","registration_default_groups":"Grupos padrão do cadastro"}
+        help_texts = {"default_language":"Pré-selecionado ao cadastrar novos usuários.","default_timezone":"Pré-selecionado ao cadastrar novos usuários.","registration_enabled":"Exibe a tela pública de cadastro e permite que qualquer visitante crie a própria conta.","registration_default_groups":"Concedidos automaticamente a quem se cadastrar pela tela pública."}
 
 
 class EmailConfigurationForm(StyledFormMixin, forms.ModelForm):
