@@ -17,7 +17,8 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o 
 ### Corrigido
 
 - Arquivos estáticos (CSS, JS, imagens) não eram servidos em produção: o processo Gunicorn, sozinho, nunca serviu `/static/` fora do `runserver` de desenvolvimento. Adicionado WhiteNoise (`whitenoise.middleware.WhiteNoiseMiddleware` + `STORAGES["staticfiles"]`) para servir os arquivos já coletados por `collectstatic` diretamente do processo da aplicação, sem depender de um servidor web separado na frente do container.
-- Ativar o TOTP ou responder ao desafio de 2FA falhava com "Verificação CSRF falhou... Origin checking failed - null" em produção: essas páginas forçavam `Referrer-Policy: no-referrer`, e navegadores enviam `Origin: null` em submits de formulário quando a página pede essa política, quebrando a checagem de origem do CSRF. Trocado para `same-origin`, que já evita o vazamento do Referer para terceiros sem esse efeito colateral.
+- Ativar o TOTP, responder ao desafio de 2FA ou confirmar e-mail falhava com "Verificação CSRF falhou... Origin checking failed - null" em produção: essas páginas forçavam `Referrer-Policy: no-referrer`, e navegadores enviam `Origin: null` em submits de formulário quando a página pede essa política, quebrando a checagem de origem do CSRF. Trocado para `same-origin`, que já evita o vazamento do Referer para terceiros sem esse efeito colateral.
+- Uma rejeição de CSRF mostrava a página de debug padrão do Django em vez da página de erro 403 customizada — CSRF usa a configuração própria `CSRF_FAILURE_VIEW`, não `handler403`. Adicionado `gatelite.errors.csrf_failure` e registrado em `CSRF_FAILURE_VIEW`.
 
 ## [1.0.1] - 2026-07-11
 

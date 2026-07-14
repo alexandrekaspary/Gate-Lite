@@ -431,7 +431,10 @@ def account_email_confirm(request):
             "target_email":mask_email(state.pending_email) if state else "",
             "token":raw_token if state else "",
         })
-    response["Referrer-Policy"]="no-referrer"
+    # "no-referrer" faz alguns navegadores enviarem Origin: null em submits de formulário
+    # same-origin, o que quebra a checagem de CSRF do Django. "same-origin" já impede o
+    # vazamento do Referer (com o token) para terceiros, sem esse efeito colateral.
+    response["Referrer-Policy"]="same-origin"
     response["Cache-Control"]="no-store, no-cache, max-age=0, must-revalidate"
     response["Pragma"]="no-cache"
     return response
