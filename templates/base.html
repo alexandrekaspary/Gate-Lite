@@ -66,6 +66,12 @@
         <span>Configurações</span>
       </a>
       {% endif %}
+      {% if perms.identity.view_audit_log %}
+      <a class="nav-link {% if url_name == 'audit' %}is-active{% endif %}" href="{% url 'console:audit' %}" {% if url_name == 'audit' %}aria-current="page"{% endif %}>
+        <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M9 12h6M9 16h6M9 8h1M14 3v4a1 1 0 0 0 1 1h4M6 3h7l5 5v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/></svg>
+        <span>Auditoria</span>
+      </a>
+      {% endif %}
 
       <p class="nav-label">Ajuda</p>
       <a class="nav-link {% if url_name == 'docs' or url_name == 'docs-page' %}is-active{% endif %}" href="{% url 'console:docs' %}" {% if url_name == 'docs' or url_name == 'docs-page' %}aria-current="page"{% endif %}>

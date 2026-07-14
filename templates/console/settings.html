@@ -16,6 +16,7 @@
       <a href="#lockout"><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="10" rx="1"/><path d="M7 11V7a5 5 0 0 1 10 0v4M12 15v2"/></svg>Proteção de login</a>
       <a href="#localization"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10Z"/></svg>Localização</a>
       <a href="#registration"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M19 8v6M22 11h-6"/></svg>Cadastro de usuários</a>
+      <a href="#audit-retention"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M9 12h6M9 16h6M9 8h1M14 3v4a1 1 0 0 0 1 1h4M6 3h7l5 5v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/></svg>Auditoria</a>
       <p class="nav-label">Recursos</p>
       <a href="#access"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/></svg>Acessos e chaves</a>
     </nav>
@@ -186,6 +187,22 @@
       <div class="info-callout">
         <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
         <p><strong>A tela pública fica em <code>/register/</code>.</strong> Com o cadastro desativado, o link some do login e a URL redireciona de volta para o login.</p>
+      </div>
+    </section>
+
+    <section class="panel settings-section" id="audit-retention">
+      <div class="settings-section-header">
+        <span class="section-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M9 12h6M9 16h6M9 8h1M14 3v4a1 1 0 0 0 1 1h4M6 3h7l5 5v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/></svg></span>
+        <div><p class="eyebrow">Plataforma</p><h2>Auditoria</h2><p>Por quanto tempo os eventos registrados em Auditoria ficam armazenados.</p></div>
+      </div>
+
+      <div class="token-grid">
+        {% include 'console/_setting_field.html' with field=form.audit_log_retention_days wrapper='token-field' suffix='dias' only %}
+      </div>
+
+      <div class="info-callout">
+        <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+        <p><strong>A limpeza roda automaticamente em segundo plano.</strong> Eventos mais antigos que o prazo configurado são removidos no próximo ciclo; reduzir o prazo não apaga nada imediatamente.</p>
       </div>
     </section>
 

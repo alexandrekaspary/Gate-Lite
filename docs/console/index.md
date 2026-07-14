@@ -35,6 +35,7 @@ As roles efetivas são a união deduplicada das atribuições diretas, das herda
 - **[Clients](clients)** — cadastrar aplicações: tipos, fluxos, URLs, scopes, audiences e secrets.
 - **[Roles](roles)** — autorizações por client: padrão, compostas e atribuições com expiração.
 - **[Configurações](configuracoes)** — cada item da política de segurança, tokens e chaves.
+- **[Auditoria](auditoria)** — eventos registrados, filtros e retenção do log.
 - **[Integração OIDC](integracao)** — endpoints, exemplos de código e validação de JWT.
 
 ## Onde cada coisa fica no console
@@ -44,6 +45,7 @@ As roles efetivas são a união deduplicada das atribuições diretas, das herda
 | Visão geral | Contadores, endpoint de descoberta e ações rápidas |
 | Usuários / Grupos / Clients | Listagens com busca, filtros e formulários |
 | Configurações | Política de segurança global, permissões, roles e chaves |
+| Auditoria | Log de eventos de segurança e alterações administrativas |
 | Documentação | Estas páginas |
 
 O acesso a cada menu depende das permissões administrativas do operador — veja a tabela completa em [Usuários](usuarios).

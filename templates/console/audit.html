@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+
+{% block title %}Auditoria · GateLite{% endblock %}
+{% block heading %}Auditoria{% endblock %}
+{% block subtitle %}<p>Eventos de segurança e alterações administrativas, com retenção de {{ retention_days }} dia{{ retention_days|pluralize }}.</p>{% endblock %}
+
+{% block content %}
+<section class="data-section" aria-labelledby="results-title">
+  <form class="filterbar" method="get" role="search">
+    <div class="search-field">
+      <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+      <label class="sr-only" for="audit-search">Buscar em auditoria</label>
+      <input id="audit-search" type="search" name="q" value="{{ request.GET.q }}" placeholder="Buscar por ação, usuário, alvo ou IP…" autocomplete="off">
+    </div>
+    <div class="filter-control">
+      <label class="sr-only" for="action-filter">Filtrar por ação</label>
+      <select id="action-filter" name="action" class="input">
+        <option value="">Todas as ações</option>
+        {% for value in actions %}<option value="{{ value }}" {% if request.GET.action == value %}selected{% endif %}>{{ value }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="filter-control">
+      <label class="sr-only" for="from-filter">De</label>
+      <input id="from-filter" type="date" name="from" class="input" value="{{ request.GET.from }}">
+    </div>
+    <div class="filter-control">
+      <label class="sr-only" for="to-filter">Até</label>
+      <input id="to-filter" type="date" name="to" class="input" value="{{ request.GET.to }}">
+    </div>
+    <button class="btn" type="submit">
+      <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 6h16M7 12h10M10 18h4"/></svg>
+      Filtrar
+    </button>
+    {% if request.GET %}<a class="btn ghost" href="?">Limpar filtros</a>{% endif %}
+  </form>
+
+  <div class="table-card">
+    <div class="table-toolbar">
+      <div><h2 id="results-title">Eventos</h2><p>{{ page_obj.paginator.count }} evento{{ page_obj.paginator.count|pluralize }} encontrado{{ page_obj.paginator.count|pluralize }}</p></div>
+    </div>
+    <div class="table-scroll">
+      <table class="data-table audit-table">
+        <thead>
+          <tr><th scope="col">Data/hora</th><th scope="col">Ação</th><th scope="col">Ator</th><th scope="col">Alvo</th><th scope="col">IP</th></tr>
+        </thead>
+        <tbody>
+          {% for event in events %}
+          <tr>
+            <td title="{{ event.created_at|date:'d/m/Y H:i:s' }}"><span class="monospace">{{ event.created_at|date:"d/m/Y H:i:s" }}</span></td>
+            <td title="{{ event.action }}"><span class="code-badge">{{ event.action }}</span></td>
+            <td title="{{ event.actor.username|default:'Sistema' }}">{% if event.actor %}<strong>{{ event.actor.username }}</strong>{% else %}<small>Sistema</small>{% endif %}</td>
+            <td {% if event.target_type and event.target_type != 'system' %}title="{{ event.target_type }} #{{ event.target_id }}"{% endif %}>{% if event.target_type and event.target_type != 'system' %}{{ event.target_type }}{% if event.target_id %} <span class="monospace">#{{ event.target_id }}</span>{% endif %}{% else %}<small>—</small>{% endif %}</td>
+            <td title="{{ event.ip_address|default:'—' }}"><span class="monospace">{{ event.ip_address|default:"—" }}</span></td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="5">
+              <div class="empty-state">
+                <span><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4M8 11h6"/></svg></span>
+                <h3>Nenhum evento encontrado</h3>
+                <p>{% if request.GET %}Revise os filtros ou limpe a busca para ver todos os eventos.{% else %}Ainda não há eventos de auditoria registrados.{% endif %}</p>
+                {% if request.GET %}<a class="btn" href="?">Limpar filtros</a>{% endif %}
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% if page_obj.paginator.num_pages > 1 %}<nav class="pagination" aria-label="Paginação"><span>Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span><div>{% if page_obj.has_previous %}<a class="btn ghost" href="?q={{ request.GET.q|urlencode }}&amp;action={{ request.GET.action|urlencode }}&amp;from={{ request.GET.from|urlencode }}&amp;to={{ request.GET.to|urlencode }}&amp;page={{ page_obj.previous_page_number }}">Anterior</a>{% endif %}{% if page_obj.has_next %}<a class="btn ghost" href="?q={{ request.GET.q|urlencode }}&amp;action={{ request.GET.action|urlencode }}&amp;from={{ request.GET.from|urlencode }}&amp;to={{ request.GET.to|urlencode }}&amp;page={{ page_obj.next_page_number }}">Próxima</a>{% endif %}</div></nav>{% endif %}
+</section>
+{% endblock %}

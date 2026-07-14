@@ -54,6 +54,7 @@ Estas permissões controlam o próprio GateLite e **não** são enviadas às apl
 | Pode gerenciar políticas de segurança | Editar as Configurações |
 | Pode gerenciar chaves de assinatura | Ver e rotacionar chaves RSA |
 | Pode gerenciar permissões administrativas | Conceder/editar estas próprias permissões |
+| Pode visualizar o log de auditoria | Tela [Auditoria](auditoria): eventos, filtros e paginação |
 
 Qualquer permissão administrativa (ou superusuário/staff) também classifica o usuário como "administrador" para a política de MFA `Obrigatório para administradores`.
 

@@ -26,6 +26,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.urls import reverse_lazy
 from django.utils import timezone, translation
+from django.utils.dateparse import parse_date
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.cache import never_cache
@@ -49,7 +50,7 @@ def audit(request,action,target=None,metadata=None):
 def safe_next(request,value,default="account"):
     return value if value and url_has_allowed_host_and_scheme(value,{request.get_host()},require_https=request.is_secure()) else reverse(default)
 def is_admin_user(user):
-    return user.is_superuser or user.is_staff or any(user.has_perm(f"identity.{code}") for code in ("view_identity_console","manage_users","manage_groups","manage_clients","manage_security","manage_keys","manage_permissions"))
+    return user.is_superuser or user.is_staff or any(user.has_perm(f"identity.{code}") for code in ("view_identity_console","manage_users","manage_groups","manage_clients","manage_security","manage_keys","manage_permissions","view_audit_log"))
 def preferred_language(user):
     preferences=UserPreferences.objects.filter(user=user).first() if user and user.pk else None
     return (preferences.language if preferences else SecurityPolicy.load().default_language).lower()
@@ -583,7 +584,7 @@ def change_own_password(request):
 def require_console_permission(request,codename):
     if not (request.user.is_superuser or request.user.has_perm(f"identity.{codename}")): raise PermissionDenied
 def has_any_console_permission(user):
-    return user.is_superuser or any(user.has_perm(f"identity.{code}") for code in ("view_identity_console","manage_users","manage_groups","manage_clients","manage_security","manage_keys","manage_permissions"))
+    return user.is_superuser or any(user.has_perm(f"identity.{code}") for code in ("view_identity_console","manage_users","manage_groups","manage_clients","manage_security","manage_keys","manage_permissions","view_audit_log"))
 
 @login_required
 def dashboard(request):
@@ -653,6 +654,25 @@ def rotate_key(request):
         SigningKey.objects.select_for_update().filter(active=True).update(active=False,retired_at=timezone.now()); kid,private,jwk=generate_key(); SigningKey.objects.create(kid=kid,encrypted_private_key=private,public_jwk=jwk)
     audit(request,"signing_key.rotated",metadata={"kid":kid}); messages.success(request,"Nova chave de assinatura ativada."); return redirect("console:keys")
 
+@login_required
+def audit_log(request):
+    require_console_permission(request,"view_audit_log")
+    events=AuditEvent.objects.select_related("actor")
+    query=request.GET.get("q","").strip()
+    if query:
+        events=events.filter(Q(action__icontains=query)|Q(actor__username__icontains=query)|Q(target_type__icontains=query)|Q(target_id__icontains=query)|Q(ip_address__icontains=query))
+    action=request.GET.get("action","").strip()
+    if action: events=events.filter(action=action)
+    date_from=parse_date(request.GET.get("from","")); date_to=parse_date(request.GET.get("to",""))
+    if date_from: events=events.filter(created_at__date__gte=date_from)
+    if date_to: events=events.filter(created_at__date__lte=date_to)
+    page_obj=Paginator(events,50).get_page(request.GET.get("page"))
+    actions=AuditEvent.objects.order_by("action").values_list("action",flat=True).distinct()
+    return render(request,"console/audit.html",{
+        "page_obj":page_obj,"events":page_obj.object_list,"actions":actions,
+        "retention_days":SecurityPolicy.load().audit_log_retention_days,
+    })
+
 # Documentação embutida do console: páginas Markdown versionadas em docs/console/.
 DOCS_PAGES = {
     "index": ("Visão geral", "O sistema, os conceitos e o mapa da documentação"),
@@ -662,6 +682,7 @@ DOCS_PAGES = {
     "clients": ("Clients", "Aplicações OIDC: tipos, fluxos, URLs, scopes e secrets"),
     "roles": ("Roles", "Autorizações por client, composição e atribuições"),
     "configuracoes": ("Configurações", "Cada item da política de segurança, tokens e chaves"),
+    "auditoria": ("Auditoria", "Eventos registrados, filtros e retenção do log"),
     "integracao": ("Integração OIDC", "Endpoints, exemplos de código e validação de JWT"),
 }
 

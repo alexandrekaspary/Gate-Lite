@@ -68,6 +68,14 @@ A variável de ambiente `EMAIL_ENABLED=0` desliga os envios globalmente, indepen
 
 A tela pública pede usuário, nome, sobrenome, e-mail e senha; segue a mesma política de senha desta página e recebe o idioma/fuso horário padrão definidos em Localização, acima. Como em qualquer criação de usuário com e-mail, a confirmação é enviada automaticamente. A conta fica ativa imediatamente — a confirmação de e-mail não bloqueia o login, apenas a claim `email_verified`. Veja também [Usuários](usuarios).
 
+## Auditoria
+
+| Campo | O que controla |
+|---|---|
+| **Retenção do log de auditoria** | Quantos dias um evento (login, alterações administrativas, MFA, e-mail, senha etc.) fica armazenado antes de ser apagado pela limpeza periódica. |
+
+Veja os filtros, colunas e a lista de eventos cobertos em [Auditoria](auditoria).
+
 ## Proteção contra força bruta
 
 | Campo | O que controla |

@@ -165,6 +165,12 @@
 .data-table th:first-child, .data-table td:first-child { width: 31%; }
 .data-table th:nth-child(2), .data-table td:nth-child(2) { width: 42%; }
 .data-table .actions-heading { width: 86px; }
+.audit-table th, .audit-table td { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.audit-table th:first-child, .audit-table td:first-child { width: 160px; }
+.audit-table th:nth-child(2), .audit-table td:nth-child(2) { width: 26%; }
+.audit-table th:nth-child(3), .audit-table td:nth-child(3) { width: 16%; }
+.audit-table th:nth-child(4), .audit-table td:nth-child(4) { width: 24%; }
+.audit-table th:nth-child(5), .audit-table td:nth-child(5) { width: 130px; }
 .identity-cell { display: flex; min-width: 0; align-items: center; gap: 10px; }
 .identity-cell > span:last-child { display: grid; min-width: 0; }
 .identity-cell strong { overflow: hidden; color: var(--ink); font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }

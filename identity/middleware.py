@@ -1,12 +1,15 @@
 from django.http import HttpResponse
 from django.utils.cache import patch_vary_headers
 import base64
+import logging
 import zoneinfo
 import jwt
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.utils import timezone, translation
 from urllib.parse import urlencode
+
+logger = logging.getLogger(__name__)
 
 class UserLocaleMiddleware:
     """Ativa idioma e fuso horário da preferência do usuário; anônimos usam o padrão do sistema."""
@@ -77,6 +80,29 @@ class MFAEnforcementMiddleware:
             if required and not mfa:
                 return redirect(reverse("account-mfa-setup")+"?"+urlencode({"next":request.get_full_path()}))
         return self.get_response(request)
+
+class AutomaticCleanupMiddleware:
+    """Roda a limpeza periódica (tokens expirados, sessões, log de auditoria) sem depender
+    de um agendador externo. Uma atualização condicional em SecurityPolicy garante que, mesmo
+    com vários processos/workers, apenas um request execute a limpeza a cada ciclo."""
+    interval = timezone.timedelta(hours=24)
+    def __init__(self,get_response): self.get_response=get_response
+    def __call__(self,request):
+        if not request.path.startswith("/static/"):
+            self._maybe_run(request)
+        return self.get_response(request)
+    def _maybe_run(self,request):
+        from .models import SecurityPolicy
+        try:
+            SecurityPolicy.load()
+            now=timezone.now()
+            claimed=SecurityPolicy.objects.filter(pk=1).exclude(last_cleanup_at__gt=now-self.interval).update(last_cleanup_at=now)
+        except Exception:
+            return  # Sem banco disponível (ex.: SimpleTestCase, healthcheck antes das migrations).
+        if claimed:
+            from .cleanup import run_cleanup
+            try: run_cleanup()
+            except Exception: logger.exception("Falha na limpeza automática periódica.")  # Oportunista: não pode derrubar o request.
 
 class OIDCCORSMiddleware:
     paths=("/oidc/token/","/oidc/userinfo/","/oidc/revoke/","/oidc/jwks/","/.well-known/openid-configuration","/oidc/.well-known/openid-configuration")

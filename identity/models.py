@@ -221,6 +221,7 @@ class AccountCapability(models.Model):
             ("manage_security", "Pode gerenciar políticas de segurança"),
             ("manage_keys", "Pode gerenciar chaves de assinatura"),
             ("manage_permissions", "Pode gerenciar permissões administrativas"),
+            ("view_audit_log", "Pode visualizar o log de auditoria"),
         ]
 
 
@@ -250,6 +251,8 @@ class SecurityPolicy(models.Model):
     default_timezone = models.CharField(max_length=64, choices=timezone_choices, default="America/Sao_Paulo")
     registration_enabled = models.BooleanField(default=False, help_text="Permite que qualquer visitante crie a própria conta na tela de cadastro.")
     registration_default_groups = models.ManyToManyField("auth.Group", blank=True, related_name="registration_defaults", help_text="Concedidos automaticamente a quem se cadastrar.")
+    audit_log_retention_days = models.PositiveIntegerField(default=180, help_text="Dias", validators=[MinValueValidator(1), MaxValueValidator(3650)])
+    last_cleanup_at = models.DateTimeField(null=True, blank=True, editable=False)
 
     class Meta: verbose_name = "Política de segurança"
     @classmethod
@@ -488,7 +491,7 @@ class OIDCSession(models.Model):
         if self.revoked_at or self.expires_at<=timezone.now() or not self.user.is_active or not self.client.is_active or not self.audience.is_active: return False
         state=UserSecurityState.objects.filter(user=self.user).first()
         if self.authentication_version and state and self.authentication_version!=state.authentication_version: return False
-        policy=SecurityPolicy.load(); is_admin=self.user.is_superuser or self.user.is_staff or any(self.user.has_perm(f"identity.{code}") for code in ("view_identity_console","manage_users","manage_groups","manage_clients","manage_security","manage_keys","manage_permissions"))
+        policy=SecurityPolicy.load(); is_admin=self.user.is_superuser or self.user.is_staff or any(self.user.has_perm(f"identity.{code}") for code in ("view_identity_console","manage_users","manage_groups","manage_clients","manage_security","manage_keys","manage_permissions","view_audit_log"))
         required=policy.mfa_mode==SecurityPolicy.MFAMode.ALL or (policy.mfa_mode==SecurityPolicy.MFAMode.ADMINS and is_admin) or self.client.require_mfa or self.audience.require_mfa
         return not required or "otp" in self.authentication_methods or "recovery" in self.authentication_methods
 

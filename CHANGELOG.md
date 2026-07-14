@@ -10,6 +10,8 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o 
 - Tela pública de cadastro (`/register/`) para que visitantes criem a própria conta, com o mesmo estilo visual das telas de login e recuperação de senha.
 - Opção **Habilitar cadastro de novos usuários** e **Grupos padrão do cadastro** na política de segurança, controlando a disponibilidade da tela e os grupos concedidos automaticamente a quem se cadastra.
 - Traduções em inglês e espanhol para a tela de cadastro e o link correspondente no login.
+- Tela **Auditoria** no console, com busca, filtro por ação e por período, e paginação sobre os eventos já registrados (login, alterações administrativas, MFA, e-mail, senha etc.), atrás da nova permissão `Pode visualizar o log de auditoria`.
+- Campo **Retenção do log de auditoria** na política de segurança; a limpeza expirada (auditoria, códigos, tokens e sessões OIDC) agora roda automaticamente em segundo plano a cada 24h, sem depender de um agendador externo ou de execução manual.
 
 ## [1.0.1] - 2026-07-11
 

@@ -178,6 +178,7 @@ class SecurityPolicyRegistrationSettingsTests(TestCase):
             "login_lockout_seconds": policy.login_lockout_seconds,
             "default_language": policy.default_language,
             "default_timezone": policy.default_timezone,
+            "audit_log_retention_days": policy.audit_log_retention_days,
             # The settings form is a single unified <form>; the real page always
             # submits this marker, and an unbound EmailConfigurationForm is
             # invalid, so a policy-only save must include it too.

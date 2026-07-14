@@ -564,6 +564,7 @@ class PolicyAndRouteContractTests(TestCase):
                 "login_lockout_seconds": 600,
                 "default_language": "en",
                 "default_timezone": "America/New_York",
+                "audit_log_retention_days": 30,
                 "email_settings_submitted": "1",
                 "enabled": "on",
                 "host": "smtp.example.com",
@@ -591,6 +592,7 @@ class PolicyAndRouteContractTests(TestCase):
         self.assertEqual(policy.login_lockout_seconds, 600)
         self.assertEqual(policy.default_language, "en")
         self.assertEqual(policy.default_timezone, "America/New_York")
+        self.assertEqual(policy.audit_log_retention_days, 30)
         email_configuration = EmailConfiguration.load()
         self.assertTrue(email_configuration.enabled)
         self.assertEqual(email_configuration.host, "smtp.example.com")
