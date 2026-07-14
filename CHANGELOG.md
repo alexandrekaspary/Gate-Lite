@@ -12,6 +12,7 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o 
 - Traduções em inglês e espanhol para a tela de cadastro e o link correspondente no login.
 - Tela **Auditoria** no console, com busca, filtro por ação e por período, e paginação sobre os eventos já registrados (login, alterações administrativas, MFA, e-mail, senha etc.), atrás da nova permissão `Pode visualizar o log de auditoria`.
 - Campo **Retenção do log de auditoria** na política de segurança; a limpeza expirada (auditoria, códigos, tokens e sessões OIDC) agora roda automaticamente em segundo plano a cada 24h, sem depender de um agendador externo ou de execução manual.
+- Página de erro genérica para qualquer `400` (`gatelite.errors.bad_request` + `templates/errors/400.html`), no mesmo estilo das páginas de 403/404/500 já existentes.
 
 ### Corrigido
 

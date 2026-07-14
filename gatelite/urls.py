@@ -31,6 +31,7 @@ urlpatterns = [
     path("", include("identity.console_urls")),
 ]
 
+handler400 = "gatelite.errors.bad_request"
 handler403 = "gatelite.errors.permission_denied"
 handler404 = "gatelite.errors.page_not_found"
 handler500 = "gatelite.errors.server_error"
