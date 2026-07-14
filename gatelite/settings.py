@@ -49,7 +49,8 @@ INSTALLED_APPS = [
     "identity",
 ]
 MIDDLEWARE = [
-    "django.middleware.security.SecurityMiddleware", "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.security.SecurityMiddleware", "whitenoise.middleware.WhiteNoiseMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware", "django.middleware.csrf.CsrfViewMiddleware",
     "identity.middleware.OIDCCORSMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware", "identity.middleware.UserLocaleMiddleware", "identity.middleware.PasswordChangeRequiredMiddleware", "identity.middleware.MFAEnforcementMiddleware", "identity.middleware.AutomaticCleanupMiddleware", "django.contrib.messages.middleware.MessageMiddleware",
@@ -97,6 +98,10 @@ USE_TZ = True
 STATIC_URL = "static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 STATIC_ROOT = BASE_DIR / "staticfiles"
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {"BACKEND": "whitenoise.storage.CompressedStaticFilesStorage"},
+}
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 LOGIN_URL = "login"
 LOGIN_REDIRECT_URL = "account"

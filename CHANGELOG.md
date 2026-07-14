@@ -13,6 +13,10 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o 
 - Tela **Auditoria** no console, com busca, filtro por ação e por período, e paginação sobre os eventos já registrados (login, alterações administrativas, MFA, e-mail, senha etc.), atrás da nova permissão `Pode visualizar o log de auditoria`.
 - Campo **Retenção do log de auditoria** na política de segurança; a limpeza expirada (auditoria, códigos, tokens e sessões OIDC) agora roda automaticamente em segundo plano a cada 24h, sem depender de um agendador externo ou de execução manual.
 
+### Corrigido
+
+- Arquivos estáticos (CSS, JS, imagens) não eram servidos em produção: o processo Gunicorn, sozinho, nunca serviu `/static/` fora do `runserver` de desenvolvimento. Adicionado WhiteNoise (`whitenoise.middleware.WhiteNoiseMiddleware` + `STORAGES["staticfiles"]`) para servir os arquivos já coletados por `collectstatic` diretamente do processo da aplicação, sem depender de um servidor web separado na frente do container.
+
 ## [1.0.1] - 2026-07-11
 
 ### Adicionado
