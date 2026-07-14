@@ -131,7 +131,10 @@ class OIDCCORSMiddleware:
         if request.path in ("/oidc/token/","/oidc/introspect/","/oidc/revoke/"):
             response["Cache-Control"]="no-store"; response["Pragma"]="no-cache"
         if request.path.startswith(("/login/2fa/","/account/2fa/")):
-            response["Cache-Control"]="no-store"; response["Pragma"]="no-cache"; response["Referrer-Policy"]="no-referrer"
+            # "no-referrer" faz alguns navegadores enviarem Origin: null em submits de
+            # formulário same-origin, o que quebra a checagem de CSRF do Django. "same-origin"
+            # já impede o vazamento do Referer para terceiros, sem esse efeito colateral.
+            response["Cache-Control"]="no-store"; response["Pragma"]="no-cache"; response["Referrer-Policy"]="same-origin"
         if allowed:
             response["Access-Control-Allow-Origin"]=origin
             response["Access-Control-Allow-Methods"]="GET, POST, OPTIONS"

@@ -1214,7 +1214,7 @@ class MFASetupTests(MFATestMixin, TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "account/mfa_setup.html")
         self.assertEqual(response["Cache-Control"], "no-store")
-        self.assertEqual(response["Referrer-Policy"], "no-referrer")
+        self.assertEqual(response["Referrer-Policy"], "same-origin")
         secret = response.context["secret"]
         self.assertEqual(len(secret), 32)
         self.assertEqual(response.context["provisioning_uri"], provisioning_uri(self.user, secret))
@@ -1261,7 +1261,7 @@ class MFASetupTests(MFATestMixin, TestCase):
         self.assertEqual(len(recovery_codes), 10)
         self.assertEqual(len(set(recovery_codes)), 10)
         self.assertEqual(enabled["Cache-Control"], "no-store")
-        self.assertEqual(enabled["Referrer-Policy"], "no-referrer")
+        self.assertEqual(enabled["Referrer-Policy"], "same-origin")
 
         mfa = UserMFA.objects.get(user=self.user)
         encrypted_secret = bytes(mfa.encrypted_secret)

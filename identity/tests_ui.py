@@ -230,7 +230,7 @@ class LoginTemplateContractTests(TestCase):
         self.assertContains(challenge, 'autocomplete="one-time-code"')
         self.assertContains(challenge, 'id="two-factor-form"')
         self.assertEqual(challenge["Cache-Control"], "no-store")
-        self.assertEqual(challenge["Referrer-Policy"], "no-referrer")
+        self.assertEqual(challenge["Referrer-Policy"], "same-origin")
 
         session = self.client.session
         session.pop("mfa_challenge_id", None)
