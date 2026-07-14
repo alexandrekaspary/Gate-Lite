@@ -6,7 +6,6 @@ import jwt
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
-from django.contrib.auth import logout as auth_logout
 from django.contrib.auth import views as auth_views
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import update_session_auth_hash
@@ -418,10 +417,10 @@ def account_email_confirm(request):
                 "valid_token":False,"confirmed":False,
             },status=400)
         else:
-            if request.user.is_authenticated:
-                auth_logout(request)
-            activate_user_language(request,user); messages.success(request,_("E-mail confirmado. Entre novamente para continuar."))
-            response=redirect("login")
+            activate_user_language(request,user)
+            response=render(request,"account/email_confirm.html",{
+                "valid_token":True,"confirmed":True,
+            })
     else:
         state=inspect_confirmation_token(raw_token)
         if state: activate_user_language(request,state.user)

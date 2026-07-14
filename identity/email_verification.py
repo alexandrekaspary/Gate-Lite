@@ -204,9 +204,6 @@ def consume_confirmation_token(raw_token, actor=None, ip_address=None):
     except IntegrityError as exc:
         raise EmailAlreadyInUse(_("Este endereço de e-mail já está em uso.")) from exc
 
-    from .mfa import invalidate_web_sessions, rotate_security_version
-    rotate_security_version(user)
-    invalidate_web_sessions(user)
     AuditEvent.objects.create(
         actor=actor if actor and actor.is_authenticated and actor.pk==user.pk else None,
         action="email.confirmed",

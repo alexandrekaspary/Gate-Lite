@@ -14,6 +14,10 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o 
 - Campo **Retenção do log de auditoria** na política de segurança; a limpeza expirada (auditoria, códigos, tokens e sessões OIDC) agora roda automaticamente em segundo plano a cada 24h, sem depender de um agendador externo ou de execução manual.
 - Página de erro genérica para qualquer `400` (`gatelite.errors.bad_request` + `templates/errors/400.html`), no mesmo estilo das páginas de 403/404/500 já existentes.
 
+### Alterado
+
+- Confirmar um e-mail não derruba mais sessões: antes, a confirmação revogava todas as sessões web, sessões OIDC e refresh tokens do usuário (o mesmo tratamento de troca de senha) e sempre redirecionava para o login, mesmo que o usuário já estivesse autenticado. Agora só atualiza o endereço confirmado e mostra a tela de confirmação, sem desconectar a sessão atual nem nenhuma outra.
+
 ### Corrigido
 
 - Arquivos estáticos (CSS, JS, imagens) não eram servidos em produção: o processo Gunicorn, sozinho, nunca serviu `/static/` fora do `runserver` de desenvolvimento. Adicionado WhiteNoise (`whitenoise.middleware.WhiteNoiseMiddleware` + `STORAGES["staticfiles"]`) para servir os arquivos já coletados por `collectstatic` diretamente do processo da aplicação, sem depender de um servidor web separado na frente do container.

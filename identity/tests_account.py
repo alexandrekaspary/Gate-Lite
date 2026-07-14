@@ -200,7 +200,10 @@ class AccountProfileEmailTests(EmailSecurityMixin, TestCase):
         self.assertTrue(state.confirmation_token_hash)
 
         confirmed = self.client.post(confirm_url)
-        self.assertEqual(confirmed.status_code, 302)
+        self.assertEqual(confirmed.status_code, 200)
+        self.assertTemplateUsed(confirmed, "account/email_confirm.html")
+        self.assertTrue(confirmed.context["confirmed"])
+        self.assertContains(confirmed, "Seu e-mail foi confirmado")
         self.user.refresh_from_db()
         state.refresh_from_db()
         self.assertEqual(self.user.email, "new.address@example.com")
@@ -208,6 +211,8 @@ class AccountProfileEmailTests(EmailSecurityMixin, TestCase):
         self.assertEqual(state.verified_email, "new.address@example.com")
         self.assertEqual(state.pending_email, "")
         self.assertEqual(state.confirmation_token_hash, "")
+        # Confirming does not sign the user out of the session that just did it.
+        self.assertIn(SESSION_KEY, self.client.session)
 
     def test_confirmation_token_expires_and_cannot_be_reused(self):
         confirm_url = self.request_email_change()
@@ -230,7 +235,7 @@ class AccountProfileEmailTests(EmailSecurityMixin, TestCase):
         self.assertEqual(resent.status_code, 302)
         self.assertEqual(len(mail.outbox), 1)
         fresh_url = self.confirmation_url_from_outbox()
-        self.assertEqual(self.client.post(fresh_url).status_code, 302)
+        self.assertEqual(self.client.post(fresh_url).status_code, 200)
 
         reused = Client().get(fresh_url)
         self.assertEqual(reused.status_code, 200)
@@ -263,7 +268,7 @@ class AccountProfileEmailTests(EmailSecurityMixin, TestCase):
         self.assertEqual(self.user.email_state.pending_email, "")
         self.assertEqual(mail.outbox, [])
 
-    def test_confirming_email_revokes_every_existing_session_and_refresh_token(self):
+    def test_confirming_email_does_not_disrupt_any_session_or_token(self):
         confirm_url = self.request_email_change()
         state = self.user.security_state
         old_version = state.authentication_version
@@ -273,15 +278,16 @@ class AccountProfileEmailTests(EmailSecurityMixin, TestCase):
         other_session_key = other_browser.session.session_key
 
         response = self.client.post(confirm_url)
-        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.context["confirmed"])
         state.refresh_from_db()
         oidc_session.refresh_from_db()
         refresh.refresh_from_db()
-        self.assertNotEqual(state.authentication_version, old_version)
-        self.assertIsNotNone(oidc_session.revoked_at)
-        self.assertIsNotNone(refresh.revoked_at)
-        self.assertFalse(Session.objects.filter(pk=other_session_key).exists())
-        self.assertNotIn(SESSION_KEY, self.client.session)
+        self.assertEqual(state.authentication_version, old_version)
+        self.assertIsNone(oidc_session.revoked_at)
+        self.assertIsNone(refresh.revoked_at)
+        self.assertTrue(Session.objects.filter(pk=other_session_key).exists())
+        self.assertIn(SESSION_KEY, self.client.session)
 
     def test_confirmation_email_uses_plain_text_and_html_templates(self):
         self.request_email_change()

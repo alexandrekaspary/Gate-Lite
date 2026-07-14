@@ -77,7 +77,7 @@ Além da criação pelo console, visitantes podem criar a própria conta em `/re
 
 ## Comportamentos automáticos
 
-- **Confirmação de e-mail**: criada a conta com e-mail, um link temporário e de uso único é enviado. O reenvio respeita o intervalo configurado.
+- **Confirmação de e-mail**: criada a conta com e-mail, um link temporário e de uso único é enviado. O reenvio respeita o intervalo configurado. Confirmar não desconecta nada: a sessão atual (e quaisquer outras) permanece ativa, sem revogar sessões OIDC ou refresh tokens.
 - **Bloqueio por força bruta**: erros consecutivos de senha bloqueiam temporariamente o login (configurável). O contador zera em login bem-sucedido; o desafio TOTP tem um bloqueio próprio e independente.
-- **Revogação em eventos críticos**: trocar senha, confirmar novo e-mail, ativar/desativar 2FA ou desativar a conta revoga sessões web, sessões OIDC e refresh tokens.
+- **Revogação em eventos críticos**: trocar senha, ativar/desativar 2FA ou desativar a conta revoga sessões web, sessões OIDC e refresh tokens.
 - **Autosserviço**: em **Minha conta**, o usuário edita nome e e-mail (nunca o username), troca a senha, gerencia o 2FA e encerra sessões OIDC que não reconhece.
