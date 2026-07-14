@@ -26,6 +26,10 @@ Grupos são o mecanismo de acesso em escala: em vez de atribuir roles usuário p
 
 Um client com política `Restrito` só autentica usuários com role atribuída, autorização direta ou que pertençam a um **grupo autorizado** no client. Ou seja, o grupo também pode ser a porta de entrada do client, mesmo sem role — veja [Clients](clients).
 
+## Grupo padrão do cadastro público
+
+Um ou mais grupos podem ser marcados como **Grupos padrão do cadastro**, em [Configurações](configuracoes). Quem se cadastra pela tela pública (`/register/`) entra automaticamente nesses grupos, herdando as mesmas roles e permissões administrativas de qualquer outro membro — revise essa lista com o mesmo cuidado de uma atribuição manual, já que o cadastro é autoatendido.
+
 ## Boas práticas
 
 - Modele grupos por função ou equipe, não por aplicação ("Suporte N2", e não "Usuários do portal-web").

@@ -59,6 +59,24 @@ A variável de ambiente `EMAIL_ENABLED=0` desliga os envios globalmente, indepen
 | **Validade da recuperação de senha** | Prazo do link de redefinição. A validade é conferida **ao abrir o link**, então ajustar a política afeta links já enviados. |
 | **Intervalo mínimo entre recuperações** | Anti-bombardeio: pedidos repetidos dentro da janela não reenviam e-mail, com resposta pública idêntica (sem revelar se a conta existe). |
 
+## Proteção contra força bruta
+
+| Campo | O que controla |
+|---|---|
+| **Tentativas de senha antes do bloqueio** | Erros consecutivos de senha no login que disparam o bloqueio da conta. |
+| **Duração do bloqueio de login** | Tempo em que até a senha correta é recusada (HTTP 429). |
+
+O contador zera a cada login bem-sucedido. O desafio TOTP tem bloqueio próprio e independente (5 erros → 5 minutos). Bloqueios geram o evento de auditoria `authentication.locked_out`. Recomenda-se rate limiting por IP também no proxy reverso, como camada adicional.
+
+## Localização
+
+| Campo | O que controla |
+|---|---|
+| **Idioma padrão** | Pré-selecionado ao cadastrar um usuário no console ou pela tela pública de cadastro. |
+| **Fuso horário padrão** | Idem, para o fuso horário. |
+
+Usuários existentes não são alterados quando esses padrões mudam — os valores servem só para novos cadastros; cada usuário mantém sua própria preferência em **Minha conta**, e é ela que define tanto o idioma da interface quanto o fuso horário usado para converter horários exibidos (por exemplo, na tela de [Auditoria](auditoria)).
+
 ## Cadastro de usuários
 
 | Campo | O que controla |
@@ -72,18 +90,9 @@ A tela pública pede usuário, nome, sobrenome, e-mail e senha; segue a mesma po
 
 | Campo | O que controla |
 |---|---|
-| **Retenção do log de auditoria** | Quantos dias um evento (login, alterações administrativas, MFA, e-mail, senha etc.) fica armazenado antes de ser apagado pela limpeza periódica. |
+| **Retenção do log de auditoria** | Quantos dias um evento (login, alterações administrativas, MFA, e-mail, senha etc.) fica armazenado antes de ser apagado pela limpeza automática. |
 
 Veja os filtros, colunas e a lista de eventos cobertos em [Auditoria](auditoria).
-
-## Proteção contra força bruta
-
-| Campo | O que controla |
-|---|---|
-| **Tentativas de senha antes do bloqueio** | Erros consecutivos de senha no login que disparam o bloqueio da conta. |
-| **Duração do bloqueio de login** | Tempo em que até a senha correta é recusada (HTTP 429). |
-
-O contador zera a cada login bem-sucedido. O desafio TOTP tem bloqueio próprio e independente (5 erros → 5 minutos). Bloqueios geram o evento de auditoria `authentication.locked_out`. Recomenda-se rate limiting por IP também no proxy reverso, como camada adicional.
 
 ## Acessos e criptografia
 

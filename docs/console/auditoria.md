@@ -30,3 +30,5 @@ Um evento com ator vazio ("Sistema" na listagem) significa uma ação sem usuár
 ## Retenção e limpeza automática
 
 O campo **Retenção do log de auditoria**, em [Configurações](configuracoes), define por quantos dias um evento permanece armazenado antes de ser apagado. A limpeza roda automaticamente em segundo plano, a cada 24 horas — sem depender de um agendador externo — e também remove códigos, tokens e sessões OIDC expirados. Reduzir o prazo não apaga nada na hora, apenas no próximo ciclo.
+
+Para forçar uma limpeza imediata (por exemplo, logo após reduzir a retenção), rode `python manage.py cleanup_identity` — opcional, nunca necessário para o funcionamento normal.

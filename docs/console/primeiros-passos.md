@@ -17,6 +17,9 @@ Abra **Configurações** e revise, nesta ordem:
 3. **Tokens, sessões e secrets** — os padrões são seguros; encurte o access token se suas APIs validam apenas o JWT localmente.
 4. **E-mail, SMTP e recuperação de senha** — conexão SMTP e validade dos links enviados por e-mail.
 5. **Proteção contra força bruta** — tentativas e duração do bloqueio de login.
+6. **Localização** — idioma e fuso horário padrão sugeridos a novos cadastros.
+7. **Cadastro de usuários** — decida se visitantes podem criar a própria conta em `/register/` e quais grupos ela concede automaticamente; fica desativado até você habilitar.
+8. **Auditoria** — ajuste a retenção do log conforme sua política de compliance; a limpeza dos eventos expirados roda sozinha, sem agendamento externo.
 
 Cada campo está explicado em [Configurações](configuracoes).
 
@@ -51,4 +54,5 @@ Usuários novos recebem somente autosserviço (ver o próprio perfil e trocar a 
 - [ ] Política de senha e MFA definidas
 - [ ] Clients criados com Redirect URIs exatas
 - [ ] Roles vinculadas a grupos, usuários nos grupos
+- [ ] Cadastro público revisado: habilitado só se desejado, com os grupos padrão corretos
 - [ ] Backup do banco e do `KEY_ENCRYPTION_SECRET` (guardados separadamente)

@@ -12,7 +12,8 @@ O modelo lembra o Keycloak, mas usa um único domínio de identidade: não exist
 - TOTP/2FA com recovery codes e step-up por client.
 - Confirmação de e-mail, recuperação de senha e bloqueio por força bruta.
 - Chaves RSA cifradas no banco, rotação de chaves e de client secrets.
-- Console administrativo com documentação embutida e auditoria.
+- Console administrativo com documentação embutida e log de auditoria (filtros, paginação e retenção configurável, com limpeza automática).
+- Cadastro público opcional de usuários, com grupos padrão configuráveis.
 
 ## Instalação
 
@@ -78,6 +79,7 @@ A documentação completa fica embutida no console (menu **Documentação**) e n
 - [Clients](docs/console/clients.md)
 - [Roles](docs/console/roles.md)
 - [Configurações](docs/console/configuracoes.md)
+- [Auditoria](docs/console/auditoria.md)
 - [Integração OIDC](docs/console/integracao.md)
 
 ## Testes
