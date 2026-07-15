@@ -1391,7 +1391,7 @@ class MFALoginTests(MFATestMixin, TestCase):
         self.assertNotIn("_auth_user_id", self.client.session)
 
     def test_pending_login_expires_and_is_removed_from_the_session(self):
-        self.begin_password_login(self.user, next_url="/console/clients/")
+        self.begin_password_login(self.user)
         self.last_challenge.expires_at = timezone.now() - timezone.timedelta(
             seconds=1
         )
@@ -1687,7 +1687,9 @@ class MFAEnforcementAndAdminResetTests(MFATestMixin, TestCase):
             verified = self.client.post(
                 "/login/2fa/", {"code": self.current_code()}
             )
-        self.assertRedirects(verified, "/admin/", fetch_redirect_response=False)
+        # A "next" de navegação direta no GateLite (não-OIDC) é ignorada: o login
+        # sempre pousa em Minha conta, mesmo vindo do /admin/login/.
+        self.assertRedirects(verified, "/account/", fetch_redirect_response=False)
         self.assertEqual(int(self.client.session["_auth_user_id"]), admin.pk)
 
     def test_admin_policy_requires_setup_then_challenges_an_enabled_admin(self):
@@ -1924,3 +1926,54 @@ class LoginLockoutTests(TestCase):
         state = UserSecurityState.objects.get(user=self.user)
         self.assertEqual(state.failed_login_attempts, 0)
         self.assertIsNone(state.login_locked_until)
+
+
+class LoginRedirectTests(OIDCTestCase):
+    """After login, direct GateLite navigation always lands on the account page;
+    only an interrupted OIDC authorization request is resumed."""
+
+    def setUp(self):
+        self.password = "Strong-password-123!"
+        self.user = User.objects.create_user("redirect-user", password=self.password)
+
+    def login(self, next_url):
+        return self.client.post(
+            "/login/", {"username": self.user.username, "password": self.password, "next": next_url}
+        )
+
+    def test_login_without_next_lands_on_account(self):
+        response = self.client.post(
+            "/login/", {"username": self.user.username, "password": self.password}
+        )
+        self.assertRedirects(response, "/account/", fetch_redirect_response=False)
+
+    def test_login_with_a_console_next_still_lands_on_account(self):
+        response = self.login("/console/users/")
+        self.assertRedirects(response, "/account/", fetch_redirect_response=False)
+
+    def test_login_interrupted_by_an_oidc_authorization_request_resumes_it(self):
+        oidc_client = self.make_client("resume-flow-app")
+        _, code_challenge = self.pkce()
+        authorize_params = {
+            "client_id": oidc_client.client_id,
+            "redirect_uri": oidc_client.uri_list()[0],
+            "response_type": "code",
+            "scope": "openid",
+            "code_challenge": code_challenge,
+            "code_challenge_method": "S256",
+        }
+
+        anonymous_visit = self.client.get("/oidc/authorize/", authorize_params)
+        self.assertEqual(anonymous_visit.status_code, 302)
+        login_redirect = urlparse(anonymous_visit.url)
+        self.assertEqual(login_redirect.path, "/login/")
+        next_value = parse_qs(login_redirect.query)["next"][0]
+        self.assertTrue(next_value.startswith("/oidc/authorize/"))
+
+        response = self.login(next_value)
+        self.assertRedirects(response, next_value, fetch_redirect_response=False)
+
+        resumed = self.client.get(next_value)
+        self.assertEqual(resumed.status_code, 302)
+        self.assertTrue(resumed.url.startswith(oidc_client.uri_list()[0]))
+        self.assertIn("code=", resumed.url)

@@ -76,7 +76,14 @@ def login_view(request):
         messages.error(request,_("Conta temporariamente bloqueada por excesso de tentativas. Tente novamente mais tarde."))
         return render(request,"registration/login.html",{"form":AuthenticationForm(request),"next":request.POST.get("next",""),"registration_enabled":registration_enabled},status=429)
     if request.method=="POST" and form.is_valid():
-        user=form.get_user(); next_url=safe_next(request,request.POST.get("next")); must_change_password=UserSecurityState.objects.filter(user=user,must_change_password=True).exists()
+        user=form.get_user()
+        requested_next=request.POST.get("next")
+        # "next" só é respeitado para retomar um fluxo OIDC interrompido pelo login
+        # (ex.: /oidc/authorize/), já que aplicações terceiras dependem desse retorno
+        # para completar o SSO. Qualquer outro destino (páginas do console, sessão
+        # expirada etc.) sempre cai em Minha conta.
+        next_url=safe_next(request,requested_next) if requested_next and requested_next.startswith("/oidc/") else reverse("account")
+        must_change_password=UserSecurityState.objects.filter(user=user,must_change_password=True).exists()
         mfa=UserMFA.objects.filter(user=user,enabled=True).first()
         if mfa:
             if mfa.locked_until and mfa.locked_until>timezone.now():

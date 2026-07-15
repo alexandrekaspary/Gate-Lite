@@ -17,6 +17,7 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o 
 
 ### Alterado
 
+- Após o login, a navegação direta no GateLite (console, `/admin/`, sessão expirada etc.) sempre pousa em Minha conta, mesmo que uma página tenha pedido para voltar a outro lugar via `next`. Um fluxo OIDC interrompido pelo login (aplicações terceiras autenticando via GateLite) continua sendo retomado normalmente — o SSO não é afetado.
 - Confirmar um e-mail não derruba mais sessões: antes, a confirmação revogava todas as sessões web, sessões OIDC e refresh tokens do usuário (o mesmo tratamento de troca de senha) e sempre redirecionava para o login, mesmo que o usuário já estivesse autenticado. Agora só atualiza o endereço confirmado e mostra a tela de confirmação, sem desconectar a sessão atual nem nenhuma outra.
 
 ### Corrigido
