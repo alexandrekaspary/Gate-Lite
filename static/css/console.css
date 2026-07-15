@@ -133,7 +133,9 @@
 .setup-steps p { margin: 3px 0 0; color: var(--muted); font-size: 11px; line-height: 1.5; }
 
 /* Lists and tables */
-.secret-card { display: flex; gap: 14px; margin-bottom: 18px; padding: 17px; border: 1px solid var(--gray-400); border-left: 3px solid var(--gray-900); border-radius: var(--radius); background: var(--gray-50); }
+.secret-card { position: relative; display: flex; gap: 14px; margin-bottom: 18px; padding: 17px 48px 17px 17px; border: 1px solid var(--gray-400); border-left: 3px solid var(--gray-900); border-radius: var(--radius); background: var(--gray-50); }
+.secret-close { position: absolute; top: 10px; right: 11px; display: grid; width: 30px; height: 30px; padding: 0; place-items: center; border: 0; border-radius: var(--radius-sm); color: var(--gray-600); background: transparent; font-size: 22px; line-height: 1; cursor: pointer; }
+.secret-close:hover { color: var(--gray-950); background: var(--gray-150); }
 .secret-icon { display: grid; width: 38px; height: 38px; flex: 0 0 auto; place-items: center; border: 1px solid var(--gray-400); border-radius: 3px; color: var(--gray-900); background: var(--gray-0); }
 .secret-icon svg { width: 19px; height: 19px; }
 .secret-content { min-width: 0; flex: 1; }
@@ -235,6 +237,12 @@
 .checkbox-ui svg { width: 13px; height: 13px; stroke-width: 2.5; }
 .checkbox-control input:checked + .checkbox-ui { border-color: var(--gray-950); color: var(--gray-0); background: var(--gray-950); }
 .checkbox-control input:focus-visible + .checkbox-ui { box-shadow: var(--focus); }
+.wizard-form[data-kind="clients-create"] select:disabled,
+.wizard-form[data-kind="clients-create"] input:disabled { color: var(--gray-800); opacity: 1; cursor: not-allowed; background: var(--gray-100); }
+.wizard-form[data-kind="clients-create"] select:disabled { padding-right: 12px; background-image: none !important; }
+.wizard-form[data-kind="clients-create"] .checkbox-control:has(input:disabled) { pointer-events: none; background: var(--gray-100); }
+.wizard-form[data-kind="clients-create"] .checkbox-control:has(input:disabled)::after { margin-left: auto; color: var(--muted); content: "Automático"; font-size: 10px; font-weight: 700; text-transform: uppercase; }
+.field-help, .checkbox-copy small { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .checkbox-copy { display: grid; min-width: 0; }
 .checkbox-copy strong { color: var(--ink-soft); font-size: 13px; }
 .checkbox-copy small { margin-top: 2px; color: var(--muted); font-size: 11px; font-weight: 400; overflow-wrap: anywhere; }

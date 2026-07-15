@@ -2,12 +2,11 @@
 {% load static %}
 
 {% block title %}{% if object %}Editar{% else %}Novo{% endif %} {{ title }} · GateLite{% endblock %}
-{% block heading %}{% if object %}Editar{% else %}Criar{% endif %} {% if kind == 'users' %}usuário{% elif kind == 'groups' %}grupo{% elif kind == 'clients' %}client{% elif kind == 'roles' %}role{% else %}permissão{% endif %}{% endblock %}
+{% block heading %}{% if object %}Editar{% else %}Criar{% endif %} {% if kind == 'users' %}usuário{% elif kind == 'groups' %}grupo{% elif kind == 'clients' %}client{% else %}permissão{% endif %}{% endblock %}
 {% block subtitle %}
   {% if kind == 'users' %}<p>Configure a identidade, as credenciais e os acessos do usuário.</p>
   {% elif kind == 'groups' %}<p>Reúna usuários e atribua roles de clients ao grupo.</p>
   {% elif kind == 'clients' %}<p>Configure uma aplicação OIDC pública ou confidencial.</p>
-  {% elif kind == 'roles' %}<p>Crie uma autorização exclusiva para um client.</p>
   {% else %}<p>Configure uma permissão administrativa da plataforma.</p>{% endif %}
 {% endblock %}
 {% block actions %}
@@ -20,7 +19,7 @@
 {% block content %}
 <div class="form-layout">
   <section class="panel form-panel">
-    <form method="post" class="form-grid wizard-form" data-kind="{{ kind }}" autocomplete="off">
+    <form method="post" class="form-grid wizard-form" data-kind="{% if kind == 'clients' %}clients-create{% else %}{{ kind }}{% endif %}" autocomplete="off">
       {% csrf_token %}
       <div class="form-heading">
         <span class="form-heading-icon">
@@ -78,7 +77,7 @@
           <button class="btn primary wizard-next" type="button" hidden>Continuar<svg aria-hidden="true" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></button>
           <button class="btn primary wizard-save" type="submit">
             <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>
-            {% if object %}Salvar alterações{% else %}Criar {% if kind == 'users' %}usuário{% elif kind == 'groups' %}grupo{% elif kind == 'clients' %}client{% elif kind == 'roles' %}role{% else %}permissão{% endif %}{% endif %}
+            {% if object %}Salvar alterações{% else %}Criar {% if kind == 'users' %}usuário{% elif kind == 'groups' %}grupo{% elif kind == 'clients' %}client{% else %}permissão{% endif %}{% endif %}
           </button>
         </div>
       </div>
@@ -90,8 +89,8 @@
     <section class="aside-card">
       <span class="aside-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg></span>
       <h2>Tipo do client</h2>
-      <p><strong>Público</strong> é indicado para SPA e aplicativos mobile, usando Authorization Code com PKCE.</p>
-      <p><strong>Confidencial</strong> é indicado para backends capazes de proteger um client secret.</p>
+      <p>Escolha apenas o tipo de aplicação. O GateLite configura automaticamente tipo do client, autenticação, PKCE e fluxos recomendados.</p>
+      <p>Os valores técnicos ficam visíveis na etapa Protocolo e são atualizados ao trocar o tipo.</p>
     </section>
     <section class="aside-card subtle">
       <h3>Boas práticas OIDC</h3>
@@ -110,13 +109,6 @@
       <h2>Acesso por grupo</h2>
       <p>Todos os membros herdam automaticamente as roles de clients vinculadas ao grupo.</p>
     </section>
-    {% elif kind == 'roles' %}
-    <section class="aside-card">
-      <span class="aside-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/></svg></span>
-      <h2>Role de client</h2>
-      <p>A role será emitida apenas em tokens destinados ao client selecionado, simplificando a autorização pela claim do JWT.</p>
-    </section>
-    <section class="aside-card subtle"><h3>Atribuições flexíveis</h3><ul><li>Conceda a grupos para acesso em escala.</li><li>Use usuários diretos para exceções.</li><li>Inclua roles compostas do mesmo client.</li><li>Conceda a service accounts quando necessário.</li></ul></section>
     {% else %}
     <section class="aside-card"><span class="aside-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg></span><h2>Permissão administrativa</h2><p>Estas permissões controlam recursos internos do GateLite. Elas são diferentes das roles das aplicações.</p></section>
     {% endif %}

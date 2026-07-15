@@ -25,6 +25,15 @@
     }
   });
 
+  const settingsContent = document.querySelector('.settings-content');
+  if (settingsContent) {
+    const savebar = settingsContent.querySelector('.settings-savebar');
+    ['registration', 'localization', 'email', 'password', 'lockout', 'mfa', 'tokens', 'audit-retention', 'access']
+      .map((id) => document.getElementById(id))
+      .filter(Boolean)
+      .forEach((section) => settingsContent.insertBefore(section, savebar));
+  }
+
   const searchIcon = '<svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>';
   document.querySelectorAll('.checkbox-list:not([data-no-enhance])').forEach((list) => {
     if (list.closest('.select-enhanced')) return;

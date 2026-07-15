@@ -1,179 +1,144 @@
-# Integração OIDC
+# Integração OpenID Connect
 
-Referência rápida para desenvolvedores integrando aplicações ao GateLite.
+Use o endpoint de descoberta como fonte dos URLs e recursos do ambiente:
 
-## Endpoints
-
-| Endpoint | Método | Finalidade |
-|---|---|---|
-| `/.well-known/openid-configuration` | GET | Discovery — a fonte de verdade dos metadados |
-| `/oidc/authorize/` | GET | Início do Authorization Code |
-| `/oidc/token/` | POST | Troca de código, refresh e client credentials |
-| `/oidc/userinfo/` | GET | Claims do usuário pelo Bearer token |
-| `/oidc/jwks/` | GET | Chaves públicas RSA para validação local |
-| `/oidc/revoke/` | POST | Revogação de access/refresh token |
-| `/oidc/introspect/` | POST | Estado do token (client confidencial) |
-| `/oidc/logout/` | GET | Logout iniciado pela aplicação |
-
-Configure as bibliotecas OIDC apontando para o Discovery — endpoints, algoritmos e claims são descobertos automaticamente.
-
-## SPA: Authorization Code + PKCE
-
-```javascript
-const base64url = (bytes) => btoa(String.fromCharCode(...new Uint8Array(bytes)))
-  .replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
-
-const verifier = base64url(crypto.getRandomValues(new Uint8Array(64)));
-const challenge = base64url(await crypto.subtle.digest(
-  "SHA-256", new TextEncoder().encode(verifier)));
-sessionStorage.setItem("pkce_verifier", verifier);
-
-const authorize = new URL("https://auth.example.com/oidc/authorize/");
-authorize.search = new URLSearchParams({
-  client_id: "portal-web",
-  redirect_uri: "https://portal.example.com/callback",
-  response_type: "code",
-  scope: "openid profile email groups offline_access",
-  audience: "portal-api",
-  code_challenge: challenge,
-  code_challenge_method: "S256",
-  state: crypto.randomUUID(),
-  nonce: crypto.randomUUID(),
-});
-location.assign(authorize);
+```text
+https://auth.exemplo.com/.well-known/openid-configuration
 ```
 
-No callback, troque o código (valide o `state` antes):
+## Endpoints principais
 
-```javascript
-const response = await fetch("https://auth.example.com/oidc/token/", {
-  method: "POST",
-  headers: { "Content-Type": "application/x-www-form-urlencoded" },
-  body: new URLSearchParams({
-    grant_type: "authorization_code",
-    client_id: "portal-web",
-    code,
-    redirect_uri: "https://portal.example.com/callback",
-    code_verifier: sessionStorage.getItem("pkce_verifier"),
-  }),
-});
-const tokens = await response.json();
+| Endpoint | Uso |
+|---|---|
+| `/.well-known/openid-configuration` | Metadados OIDC. |
+| `/oidc/authorize/` | Login e emissão do Authorization Code. |
+| `/oidc/token/` | Troca de code, refresh e Client Credentials. |
+| `/oidc/userinfo/` | Claims do usuário autenticado. |
+| `/oidc/jwks/` | Chaves públicas RSA. |
+| `/oidc/revoke/` | Revogação de refresh/access token. |
+| `/oidc/introspect/` | Estado atual de um token. |
+| `/oidc/logout/` | Encerramento OIDC. |
+
+## Escolher o fluxo
+
+| Aplicação | Fluxo |
+|---|---|
+| SPA ou mobile/desktop | Authorization Code + PKCE S256, sem secret. |
+| Backend web com login | Authorization Code + PKCE, autenticando no token endpoint com Client Secret Basic. |
+| Serviço sem usuário | Client Credentials com Client Secret Basic. |
+| API | Recebe e valida access tokens; não inicia login. |
+
+O wizard do client preenche essas opções automaticamente.
+
+## Authorization Code com PKCE
+
+Gere um `code_verifier` aleatório e envie seu SHA-256 em base64url como `code_challenge`:
+
+```text
+GET /oidc/authorize/?
+  client_id=portal-web&
+  redirect_uri=https%3A%2F%2Fportal.exemplo.com%2Fcallback&
+  response_type=code&
+  scope=openid%20profile%20email%20groups%20offline_access&
+  state=valor-aleatorio&
+  nonce=valor-aleatorio&
+  code_challenge=DESAFIO&
+  code_challenge_method=S256
 ```
 
-O navegador nunca recebe client secret. Prefira access tokens em memória.
-
-## Service account: Client Credentials
+Depois do callback, troque o code:
 
 ```bash
-curl -u 'worker-service:CLIENT_SECRET' \
-  -X POST 'https://auth.example.com/oidc/token/' \
-  --data-urlencode 'grant_type=client_credentials' \
-  --data-urlencode 'scope=jobs.read' \
-  --data-urlencode 'audience=jobs-api'
+curl -X POST https://auth.exemplo.com/oidc/token/ \
+  -H 'Content-Type: application/x-www-form-urlencoded' \
+  -d 'grant_type=authorization_code' \
+  -d 'client_id=portal-web' \
+  -d 'code=CODIGO' \
+  -d 'redirect_uri=https://portal.exemplo.com/callback' \
+  -d 'code_verifier=VERIFICADOR'
 ```
 
-O token sai com `sub: "client:worker-service"`, `amr: ["client_secret"]` e `acr: urn:gatelite:acr:client`.
+Um backend confidencial também envia `Authorization: Basic base64(client_id:client_secret)`.
 
-## Validando o JWT na API (Python)
+Sempre valide `state`; valide `nonce` no ID token. Redirect URI precisa coincidir exatamente com o cadastro.
+
+## Client Credentials
+
+```bash
+curl -X POST https://auth.exemplo.com/oidc/token/ \
+  -u 'worker-service:CLIENT_SECRET' \
+  -H 'Content-Type: application/x-www-form-urlencoded' \
+  -d 'grant_type=client_credentials' \
+  -d 'scope=api.read'
+```
+
+O token não representa usuário: `sub` começa com `client:` e `amr` contém `client_secret`.
+
+## Refresh Token
+
+Refresh só é emitido quando o client habilita o fluxo e a autorização solicita `offline_access`:
+
+```bash
+curl -X POST https://auth.exemplo.com/oidc/token/ \
+  -d 'grant_type=refresh_token' \
+  -d 'client_id=portal-web' \
+  -d 'refresh_token=REFRESH_TOKEN'
+```
+
+Cada uso rotaciona o refresh. Reutilizar um valor antigo revoga a família inteira.
+
+## Validar access tokens
+
+Uma API deve verificar:
+
+1. assinatura RS256 usando o `kid` e o JWKS;
+2. algoritmo esperado;
+3. `iss` igual ao issuer configurado;
+4. `exp` e demais tempos;
+5. `aud` igual ao client esperado pela API;
+6. `token_use` igual a `access`;
+7. roles necessárias.
+
+Exemplo com PyJWT:
 
 ```python
 import jwt
 
-issuer = "https://auth.example.com"
-jwks = jwt.PyJWKClient(f"{issuer}/oidc/jwks/")
-signing_key = jwks.get_signing_key_from_jwt(token)
-
+jwks = jwt.PyJWKClient("https://auth.exemplo.com/oidc/jwks/")
+key = jwks.get_signing_key_from_jwt(token).key
 claims = jwt.decode(
-    token, signing_key.key, algorithms=["RS256"],
-    issuer=issuer, audience="portal-api",
+    token,
+    key,
+    algorithms=["RS256"],
+    issuer="https://auth.exemplo.com",
+    audience="portal-web",
 )
 
 if claims.get("token_use") != "access":
     raise PermissionError("Tipo de token inválido")
-
-roles = set(claims.get("resource_access", {}).get("portal-api", {}).get("roles", []))
-if "reader" not in roles:
+if "reader" not in claims.get("roles", []):
     raise PermissionError("Role reader obrigatória")
-
-# Para exigir segundo fator:
-if claims.get("acr") != "urn:gatelite:acr:2":
-    raise PermissionError("MFA obrigatório")
 ```
 
-Valide **no mínimo** assinatura, algoritmo, `iss`, `exp`, `aud` e `token_use`. Use `azp` para restringir qual client pode chamar a API.
+Se o client exige 2FA, a API também pode conferir `acr == "urn:gatelite:acr:2"`.
 
-## Exemplo de payload
-
-Access token emitido para o usuário `42` no cenário SPA acima — client `portal-web` pedindo a audience `portal-api`, após login com senha e segundo fator:
-
-```json
-{
-  "iss": "https://auth.example.com",
-  "sub": "42",
-  "aud": "portal-api",
-  "azp": "portal-web",
-  "jti": "wJ4jRkD0m3H8vX2sLq9TzA1c",
-  "iat": 1767100000,
-  "exp": 1767100300,
-  "scope": "openid profile email groups offline_access",
-  "token_use": "access",
-  "roles": ["reader", "editor"],
-  "resource_access": { "portal-api": { "roles": ["reader", "editor"] } },
-  "sid": "0b6c9f1e-4b7d-4a54-9d2c-8f5e6a7b3c21",
-  "auth_time": 1767099980,
-  "amr": ["pwd", "otp"],
-  "acr": "urn:gatelite:acr:2"
-}
-```
-
-O header traz `{"alg": "RS256", "kid": "..."}` — use o `kid` para escolher a chave no JWKS. No **ID token**, `token_use` é `"id"`, o `aud` é o próprio client (`portal-web`), as roles são as do client e entram os claims do usuário conforme os scopes:
-
-```json
-{
-  "token_use": "id",
-  "aud": "portal-web",
-  "preferred_username": "ana.souza",
-  "name": "Ana Souza",
-  "given_name": "Ana",
-  "family_name": "Souza",
-  "locale": "pt-BR",
-  "zoneinfo": "America/Sao_Paulo",
-  "email": "ana.souza@example.com",
-  "email_verified": true,
-  "groups": ["financeiro"],
-  "nonce": "b52c4a8e-..."
-}
-```
-
-Em tokens de Client Credentials não há sessão: saem `sub: "client:worker-service"`, `amr: ["client_secret"]`, `acr: "urn:gatelite:acr:client"`, sem `sid` nem `auth_time`.
-
-## Claims principais
+## Claims relevantes
 
 | Claim | Conteúdo |
 |---|---|
-| `sub` | Usuário (`"42"`) ou service account (`"client:worker"`) |
-| `aud` / `azp` | Audience (quem valida) / client que solicitou |
-| `token_use` | `access` ou `id` |
-| `roles` / `resource_access` | Roles efetivas para a audience |
-| `groups` | Grupos relevantes para o client (scope `groups`) |
-| `email` / `email_verified` | Verificado só se o endereço confirmado ainda é o atual |
-| `locale` / `zoneinfo` | Idioma e fuso horário do usuário (scope `profile`) |
-| `auth_time`, `amr`, `acr` | Quando e como o usuário autenticou (`["pwd","otp"]`, `acr:2` = com segundo fator) |
-| `sid`, `jti` | Sessão OIDC e id único do token |
+| `sub` | ID do usuário ou `client:<client_id>`. |
+| `aud` | Client destinatário do token. |
+| `azp` | Client que iniciou a solicitação. |
+| `roles` | Roles efetivas para o destinatário. |
+| `resource_access` | Roles agrupadas pelo client. |
+| `scope` | Scopes concedidos. |
+| `amr` / `acr` | Método e nível de autenticação. |
+| `sid` / `jti` | Sessão e identificador único do token. |
 
-## Refresh tokens e revogação
+## CORS
 
-- Refresh só é emitido com **Refresh habilitado no client** + scope `offline_access`.
-- Cada uso rotaciona o token; reutilizar um antigo revoga a **família inteira** e encerra a sessão OIDC (proteção contra roubo).
-- O refresh não pode ampliar os scopes originais.
-- UserInfo e Introspection enxergam revogações imediatamente; validação JWT local só percebe no `exp` — mantenha TTLs curtos ou use Introspection quando revogação imediata for requisito.
+Cadastre em **Web origins (CORS)** somente origens exatas, como `https://portal.exemplo.com`. O GateLite libera os endpoints OIDC apenas quando a origem e o client da requisição correspondem ao cadastro.
 
-## Erros comuns
+## Revogação
 
-| Erro | Causa provável |
-|---|---|
-| `redirect_uri inválido` | A URI enviada difere da cadastrada (inclusive barra final). |
-| `invalid_target` | A audience pedida não está nas audiences permitidas do client. |
-| `invalid_scope` | Scope não cadastrado no client, ou falta `openid` no Authorization Code. |
-| PKCE inválido | `code_challenge_method` diferente de S256, ou `code_verifier` não confere. |
-| Token sem as roles esperadas | Confira `aud`, o client dono da role, a atribuição e sua expiração. |
+UserInfo e Introspection percebem revogações imediatamente. Uma API que valida JWT localmente só percebe a expiração; use access tokens curtos ou Introspection quando o corte imediato for obrigatório.

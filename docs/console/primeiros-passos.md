@@ -1,58 +1,45 @@
 # Primeiros passos
 
-Este roteiro cobre a configuração de um ambiente novo, na ordem que evita retrabalho.
+## 1. Proteja o primeiro acesso
 
-## Primeiro acesso
+Em um banco novo, as migrations criam o superusuário `admin` com a senha temporária `123456`, somente se esse username ainda não existir. Entre e troque a senha imediatamente; enquanto a troca estiver pendente, o usuário fica restrito à tela de nova senha.
 
-Ao aplicar as migrations em um banco novo, o GateLite cria o superusuário `admin` com a senha temporária `123456`. Esse usuário só é criado se o username `admin` ainda não existir.
+## 2. Revise Configurações
 
-Entre no console com essa credencial e defina uma nova senha imediatamente: a troca é obrigatória antes de qualquer outro acesso. Em ambientes expostos, aplique a migration apenas em uma janela controlada e nunca mantenha a senha temporária.
+Use a ordem apresentada na página:
 
-## 1. Ajuste a política de segurança
+1. **Cadastro de usuários** — decida se `/register/` ficará público e quais grupos serão concedidos.
+2. **Localização** — escolha idioma e fuso padrão dos novos usuários.
+3. **E-mail e recuperação** — configure SMTP, remetente e validade dos links.
+4. **Política de senha** — defina tamanho e complexidade.
+5. **Proteção de login** — configure tentativas e bloqueio.
+6. **Autenticação em duas etapas** — escolha a política global de TOTP.
+7. **Tokens, sessões e secrets** — revise TTLs e a sobreposição de client secrets.
+8. **Auditoria** — defina a retenção.
 
-Abra **Configurações** e revise, nesta ordem:
+## 3. Crie os clients
 
-1. **Política de senha** — requisitos aplicados a toda senha nova (cadastro, autosserviço e reset).
-2. **Autenticação em duas etapas** — comece com `Opcional` ou `Obrigatório para administradores`; mude para `Obrigatório para todos` quando os usuários estiverem orientados.
-3. **Tokens, sessões e secrets** — os padrões são seguros; encurte o access token se suas APIs validam apenas o JWT localmente.
-4. **E-mail, SMTP e recuperação de senha** — conexão SMTP e validade dos links enviados por e-mail.
-5. **Proteção contra força bruta** — tentativas e duração do bloqueio de login.
-6. **Localização** — idioma e fuso horário padrão sugeridos a novos cadastros.
-7. **Cadastro de usuários** — decida se visitantes podem criar a própria conta em `/register/` e quais grupos ela concede automaticamente; fica desativado até você habilitar.
-8. **Auditoria** — ajuste a retenção do log conforme sua política de compliance; a limpeza dos eventos expirados roda sozinha, sem agendamento externo.
+Abra **Clients → Novo client**. O mesmo wizard é usado na edição:
 
-Cada campo está explicado em [Configurações](configuracoes).
+1. escolha o tipo da aplicação e, se houver login de usuário, decida se ela exige 2FA;
+2. confira o protocolo preenchido automaticamente e ajuste os scopes;
+3. informe Redirect URIs quando o tipo usa login e configure CORS quando houver chamadas do navegador;
+4. cadastre uma ou mais roles no formato `nome | descrição`.
 
-## 2. Confirme o envio de e-mail
+Clients confidenciais geram um client secret depois de salvar. Copie o valor antes de fechar o aviso.
 
-Confirmação de endereço e recuperação de senha dependem de SMTP configurado em **Configurações**. Host, porta, usuário, remetente e TLS são persistidos no banco; a senha SMTP é cifrada com a chave de criptografia da instalação e nunca é exibida depois de salva.
+## 4. Distribua as roles
 
-## 3. Cadastre os clients
-
-Crie um client para cada aplicação — SPA, API, backend, service account. Siga o tutorial em [Clients](clients). Para o caso comum "frontend + API":
-
-1. crie o **resource server** (a API) primeiro;
-2. crie o client do frontend e inclua a API nas **audiences permitidas**;
-3. crie as [roles](roles) dentro da API.
-
-## 4. Estruture grupos e usuários
-
-1. Crie [grupos](grupos) espelhando as equipes ou funções ("Financeiro", "Suporte").
-2. Vincule as roles dos clients aos grupos.
-3. Crie os [usuários](usuarios) e associe-os aos grupos.
-
-O caminho recomendado é sempre `Usuário → Grupo → Role do client`; use atribuições diretas apenas para exceções individuais.
+Crie grupos por função ou equipe, vincule as roles dos clients e adicione os usuários. Use roles diretas no usuário apenas para exceções.
 
 ## 5. Delegue a administração
 
-Usuários novos recebem somente autosserviço (ver o próprio perfil e trocar a própria senha). Para dar acesso ao console a outros operadores, conceda permissões administrativas específicas — de preferência através de um grupo (ex.: um grupo "Operadores" com `Pode gerenciar usuários`). Evite multiplicar superusuários.
+Conceda permissões específicas do console, preferencialmente por grupos. Evite transformar operadores comuns em superusuários.
 
-## Checklist final
+## 6. Prepare produção
 
-- [ ] `DJANGO_DEBUG=0`, segredos fortes e `OIDC_ISSUER` HTTPS estável no ambiente
-- [ ] SMTP testado (peça uma confirmação de e-mail e verifique a caixa de entrada)
-- [ ] Política de senha e MFA definidas
-- [ ] Clients criados com Redirect URIs exatas
-- [ ] Roles vinculadas a grupos, usuários nos grupos
-- [ ] Cadastro público revisado: habilitado só se desejado, com os grupos padrão corretos
-- [ ] Backup do banco e do `KEY_ENCRYPTION_SECRET` (guardados separadamente)
+- Use `DJANGO_DEBUG=0`, segredos fortes e `OIDC_ISSUER` HTTPS estável.
+- Guarde backup do banco e de `KEY_ENCRYPTION_SECRET` separadamente.
+- Restrinja o acesso direto quando houver proxy/load balancer.
+- Para registrar o IP real na auditoria, configure `TRUST_X_FORWARDED_FOR=1` e a quantidade correta em `TRUSTED_PROXY_COUNT`.
+- Teste login, 2FA, envio de e-mail, rotação de client secret e validação de JWT antes de liberar o ambiente.

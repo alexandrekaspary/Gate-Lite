@@ -17,15 +17,11 @@
       { title: 'Roles de clients', description: 'Acesso às aplicações', fields: ['client_roles', 'roles'] },
       { title: 'Administração', description: 'Permissões do console', fields: ['permissions'] }
     ],
-    clients: [
-      { title: 'Identificação', description: 'Nome, ID e tipo', fields: ['name', 'client_id', 'application_type', 'client_type', 'is_confidential', 'is_active'] },
-      { title: 'Protocolo', description: 'Fluxos e scopes', fields: ['grant_types', 'allowed_grant_types', 'authorization_code_enabled', 'refresh_token_enabled', 'client_credentials_enabled', 'require_pkce', 'scopes', 'response_types', 'token_endpoint_auth_method'] },
-      { title: 'URLs', description: 'Redirecionamentos', fields: ['redirect_uris', 'post_logout_redirect_uris', 'web_origins', 'allowed_origins', 'cors_origins'] },
-      { title: 'Acesso', description: 'Políticas e credenciais', fields: ['allowed_groups', 'allowed_users', 'allowed_audiences', 'groups', 'generate_secret', 'service_account', 'access_policy', 'require_mfa'] }
-    ],
-    roles: [
-      { title: 'Role', description: 'Client e identificação', fields: ['client', 'name', 'description', 'is_default'] },
-      { title: 'Atribuições', description: 'Grupos, usuários e serviços', fields: ['groups', 'users', 'service_clients', 'composites', 'composite_roles'] }
+    'clients-create': [
+      { title: 'Aplicação', description: 'Nome, tipo e segurança', fields: ['name', 'client_id', 'application_type', 'require_mfa', 'is_active'] },
+      { title: 'Protocolo', description: 'Configuração recomendada', fields: ['client_type', 'token_endpoint_auth_method', 'authorization_code_enabled', 'refresh_token_enabled', 'client_credentials_enabled', 'require_pkce', 'rotate_secret', 'scopes'] },
+      { title: 'URLs', description: 'Redirecionamentos', fields: ['redirect_uris', 'post_logout_redirect_uris', 'web_origins', 'allowed_origins', 'cors_origins', 'url_status'] },
+      { title: 'Roles', description: 'Autorizações do client', fields: ['role_definitions'] }
     ]
   };
 
@@ -33,6 +29,51 @@
   const fieldsContainer = form.querySelector('.form-fields');
   const anchor = form.querySelector('.wizard-anchor');
   if (!steps || !fieldsContainer || !anchor) return;
+
+  if (form.dataset.kind === 'clients-create') {
+    const presets = {
+      spa: ['public', 'none', true, true, false, true],
+      native: ['public', 'none', true, true, false, true],
+      web: ['confidential', 'client_secret_basic', true, true, false, true],
+      service: ['confidential', 'client_secret_basic', false, false, true, false],
+      resource: ['confidential', 'client_secret_basic', false, false, false, false]
+    };
+    const names = ['client_type', 'token_endpoint_auth_method', 'authorization_code_enabled', 'refresh_token_enabled', 'client_credentials_enabled', 'require_pkce'];
+    const applicationType = form.elements.application_type;
+    const scopePresets = {
+      spa: 'openid profile email groups offline_access',
+      native: 'openid profile email groups offline_access',
+      web: 'openid profile email groups offline_access',
+      service: 'api.read',
+      resource: 'api.read api.write'
+    };
+    let previousScopePreset = scopePresets[applicationType.value];
+    const applyPreset = () => names.forEach((name, index) => {
+      const field = form.elements[name];
+      const value = presets[applicationType.value]?.[index];
+      if (!field || value === undefined) return;
+      if (field.type === 'checkbox') field.checked = value;
+      else field.value = value;
+    });
+    const updateRelevantFields = () => {
+      const type = applicationType.value;
+      const hasUserLogin = ['spa', 'native', 'web'].includes(type);
+      ['redirect_uris', 'post_logout_redirect_uris'].forEach((name) => {
+        form.elements[name]?.closest('.field-wrapper')?.toggleAttribute('hidden', !hasUserLogin);
+      });
+      form.elements.url_status?.closest('.field-wrapper')?.toggleAttribute('hidden', hasUserLogin);
+      form.elements.require_mfa?.closest('.field-wrapper')?.toggleAttribute('hidden', !hasUserLogin);
+      form.elements.rotate_secret?.closest('.field-wrapper')?.toggleAttribute('hidden', ['spa', 'native'].includes(type));
+      const scopes = form.elements.scopes;
+      if (scopes && (!scopes.value.trim() || scopes.value.trim() === previousScopePreset)) {
+        scopes.value = scopePresets[type];
+      }
+      previousScopePreset = scopePresets[type];
+    };
+    applicationType?.addEventListener('change', () => { applyPreset(); updateRelevantFields(); });
+    applyPreset();
+    updateRelevantFields();
+  }
 
   const wrappers = [...fieldsContainer.querySelectorAll(':scope > .field-wrapper')];
   if (wrappers.length < 2) return;

@@ -353,15 +353,16 @@ class ClientForm(StyledFormMixin, forms.ModelForm):
             self.instance.token_endpoint_auth_method=OIDCClient.AuthMethod.NONE
             self.instance.require_pkce=True; self.instance.client_credentials_enabled=False
         app_type=data.get("application_type")
-        if app_type in (OIDCClient.ApplicationType.SPA,OIDCClient.ApplicationType.NATIVE) and data.get("client_type")!=OIDCClient.ClientType.PUBLIC: self.add_error("client_type","SPA e aplicativos nativos devem ser clients públicos.")
-        if app_type in (OIDCClient.ApplicationType.SERVICE,OIDCClient.ApplicationType.RESOURCE) and data.get("client_type")!=OIDCClient.ClientType.CONFIDENTIAL: self.add_error("client_type","Services e resource servers devem ser confidenciais.")
+        if not getattr(self, "derive_application_defaults", False):
+            if app_type in (OIDCClient.ApplicationType.SPA,OIDCClient.ApplicationType.NATIVE) and data.get("client_type")!=OIDCClient.ClientType.PUBLIC: self.add_error("client_type","SPA e aplicativos nativos devem ser clients públicos.")
+            if app_type in (OIDCClient.ApplicationType.SERVICE,OIDCClient.ApplicationType.RESOURCE) and data.get("client_type")!=OIDCClient.ClientType.CONFIDENTIAL: self.add_error("client_type","Services e resource servers devem ser confidenciais.")
         redirects=self._lines(data.get("redirect_uris", "")); origins=self._lines(data.get("allowed_origins", "")); logouts=self._lines(data.get("post_logout_redirect_uris", ""))
-        if data.get("authorization_code_enabled") and not redirects: self.add_error("redirect_uris","Informe ao menos uma Redirect URI para Authorization Code.")
+        if not getattr(self, "derive_application_defaults", False) and data.get("authorization_code_enabled") and not redirects: self.add_error("redirect_uris","Informe ao menos uma Redirect URI para Authorization Code.")
         for field,values,is_origin in (("redirect_uris",redirects,False),("post_logout_redirect_uris",logouts,False),("allowed_origins",origins,True)):
             try: data[field]="\n".join(dict.fromkeys(self._validate_uri(v,is_origin) for v in values))
             except forms.ValidationError as exc: self.add_error(field,exc)
         scope_names=list(dict.fromkeys(re.findall(r"[A-Za-z0-9_.:-]+",data.get("scopes", ""))))
-        if data.get("authorization_code_enabled") and "openid" not in scope_names: self.add_error("scopes","Authorization Code OIDC exige o scope openid.")
+        if not getattr(self, "derive_application_defaults", False) and data.get("authorization_code_enabled") and "openid" not in scope_names: self.add_error("scopes","Authorization Code OIDC exige o scope openid.")
         data["scope_names"]=scope_names
         return data
     def save(self,commit=True):
@@ -375,37 +376,196 @@ class ClientForm(StyledFormMixin, forms.ModelForm):
             for scope in scopes: ClientScopeAssignment.objects.get_or_create(client=client,scope=scope,defaults={"is_default":scope.name in ("openid","profile","email")})
         return client
 
+class ClientCreateForm(ClientForm):
+    """Cadastro orientado pelo tipo da aplicação, com protocolo seguro derivado."""
+
+    derive_application_defaults = True
+    role_definitions = forms.CharField(
+        label="Roles do client",
+        widget=forms.Textarea(attrs={"rows": 6, "placeholder": "reader | Consulta dados\neditor | Altera dados"}),
+        help_text="Informe uma role por linha no formato nome | descrição.",
+    )
+    url_status = forms.CharField(
+        label="URLs deste tipo",
+        required=False,
+        disabled=True,
+        initial="Este tipo não usa redirecionamento. Configure CORS somente se houver chamadas pelo navegador.",
+    )
+
+    APPLICATION_PRESETS = {
+        OIDCClient.ApplicationType.SPA: {
+            "client_type": OIDCClient.ClientType.PUBLIC,
+            "token_endpoint_auth_method": OIDCClient.AuthMethod.NONE,
+            "authorization_code_enabled": True,
+            "refresh_token_enabled": True,
+            "client_credentials_enabled": False,
+            "require_pkce": True,
+        },
+        OIDCClient.ApplicationType.NATIVE: {
+            "client_type": OIDCClient.ClientType.PUBLIC,
+            "token_endpoint_auth_method": OIDCClient.AuthMethod.NONE,
+            "authorization_code_enabled": True,
+            "refresh_token_enabled": True,
+            "client_credentials_enabled": False,
+            "require_pkce": True,
+        },
+        OIDCClient.ApplicationType.WEB: {
+            "client_type": OIDCClient.ClientType.CONFIDENTIAL,
+            "token_endpoint_auth_method": OIDCClient.AuthMethod.BASIC,
+            "authorization_code_enabled": True,
+            "refresh_token_enabled": True,
+            "client_credentials_enabled": False,
+            "require_pkce": True,
+        },
+        OIDCClient.ApplicationType.SERVICE: {
+            "client_type": OIDCClient.ClientType.CONFIDENTIAL,
+            "token_endpoint_auth_method": OIDCClient.AuthMethod.BASIC,
+            "authorization_code_enabled": False,
+            "refresh_token_enabled": False,
+            "client_credentials_enabled": True,
+            "require_pkce": False,
+        },
+        OIDCClient.ApplicationType.RESOURCE: {
+            "client_type": OIDCClient.ClientType.CONFIDENTIAL,
+            "token_endpoint_auth_method": OIDCClient.AuthMethod.BASIC,
+            "authorization_code_enabled": False,
+            "refresh_token_enabled": False,
+            "client_credentials_enabled": False,
+            "require_pkce": False,
+        },
+    }
+    DERIVED_FIELDS = tuple(next(iter(APPLICATION_PRESETS.values())))
+    SCOPE_PRESETS = {
+        OIDCClient.ApplicationType.SPA: "openid profile email groups offline_access",
+        OIDCClient.ApplicationType.NATIVE: "openid profile email groups offline_access",
+        OIDCClient.ApplicationType.WEB: "openid profile email groups offline_access",
+        OIDCClient.ApplicationType.SERVICE: "api.read",
+        OIDCClient.ApplicationType.RESOURCE: "api.read api.write",
+    }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        application_type = (
+            self.data.get("application_type") if self.is_bound
+            else self.initial.get("application_type", OIDCClient.ApplicationType.WEB)
+        )
+        preset = self.APPLICATION_PRESETS.get(application_type, self.APPLICATION_PRESETS[OIDCClient.ApplicationType.WEB])
+        for name in self.DERIVED_FIELDS:
+            self.fields[name].required = False
+            self.fields[name].disabled = True
+            self.fields[name].initial = preset[name]
+        for name in ("generate_secret", "allowed_groups", "allowed_users", "allowed_audiences"):
+            self.fields.pop(name, None)
+        self.fields["access_policy"].required = False
+        self.fields["access_policy"].disabled = True
+        self.fields["access_policy"].widget = forms.HiddenInput()
+        self.fields["access_policy"].initial = self.instance.access_policy if self.instance.pk else OIDCClient.AccessPolicy.OPEN
+        self.fields["application_type"].choices = (
+            (OIDCClient.ApplicationType.SPA, "SPA — aplicação no navegador"),
+            (OIDCClient.ApplicationType.NATIVE, "Aplicativo mobile ou desktop"),
+            (OIDCClient.ApplicationType.WEB, "Backend web com login de usuário"),
+            (OIDCClient.ApplicationType.SERVICE, "Serviço sem usuário — máquina a máquina"),
+            (OIDCClient.ApplicationType.RESOURCE, "API que recebe e valida tokens"),
+        )
+        self.fields["application_type"].help_text = "A escolha define automaticamente os fluxos, a autenticação e os campos necessários."
+        self.fields["client_type"].label = "Tipo do client"
+        self.fields["token_endpoint_auth_method"].label = "Autenticação no endpoint de token"
+        self.fields["authorization_code_enabled"].help_text = "Login de usuário pelo navegador. Usado em SPA, mobile e backend web com login."
+        self.fields["refresh_token_enabled"].help_text = "Renova a sessão da aplicação sem pedir novo login."
+        self.fields["client_credentials_enabled"].help_text = "Token sem usuário, exclusivo para comunicação máquina a máquina."
+        self.fields["require_pkce"].help_text = "Protege o Authorization Code contra interceptação."
+        if not self.instance.pk:
+            self.fields["scopes"].initial = self.SCOPE_PRESETS[application_type]
+        self.fields["scopes"].help_text = "Permissões que este client poderá solicitar. Ajuste os nomes conforme sua API."
+        self.fields["require_mfa"].label = "Exigir autenticação em dois fatores"
+
+    def clean(self):
+        data = super().clean()
+        preset = self.APPLICATION_PRESETS.get(data.get("application_type"))
+        if not preset:
+            return data
+        data.update(preset)
+        for name, value in preset.items():
+            setattr(self.instance, name, value)
+        app_type = data.get("application_type")
+        if app_type in (OIDCClient.ApplicationType.SERVICE, OIDCClient.ApplicationType.RESOURCE):
+            for field_name in ("redirect_uris", "post_logout_redirect_uris"):
+                self._errors.pop(field_name, None)
+            data["redirect_uris"] = ""
+            data["post_logout_redirect_uris"] = ""
+            data["require_mfa"] = False
+            self.instance.require_mfa = False
+        if preset["authorization_code_enabled"]:
+            if not self._lines(data.get("redirect_uris", "")) and "redirect_uris" not in self.errors:
+                self.add_error("redirect_uris", "Informe ao menos uma Redirect URI para Authorization Code.")
+            if "openid" not in data.get("scope_names", []) and "scopes" not in self.errors:
+                self.add_error("scopes", "Aplicações com login de usuário exigem o scope openid.")
+        roles = []
+        seen = set()
+        for line_number, line in enumerate(data.get("role_definitions", "").splitlines(), 1):
+            if not line.strip():
+                continue
+            parts = [part.strip() for part in line.split("|", 1)]
+            if len(parts) != 2 or not all(parts):
+                self.add_error("role_definitions", f"Linha {line_number}: use o formato nome | descrição.")
+                continue
+            name, description = parts
+            try:
+                ClientRole._meta.get_field("name").clean(name, None)
+            except forms.ValidationError as exc:
+                self.add_error("role_definitions", f"Linha {line_number}: {exc.messages[0]}")
+                continue
+            if name in seen:
+                self.add_error("role_definitions", f"Linha {line_number}: a role {name} está repetida.")
+                continue
+            seen.add(name)
+            roles.append((name, description))
+        data["parsed_roles"] = roles
+        return data
+
+    def save(self, commit=True):
+        client = super().save(commit)
+        if commit:
+            ClientRole.objects.bulk_create(
+                ClientRole(client=client, name=name, description=description)
+                for name, description in self.cleaned_data["parsed_roles"]
+            )
+        return client
+
+class ClientEditForm(ClientCreateForm):
+    """Edição com o mesmo fluxo simplificado da criação e sincronização das roles."""
+
+    rotate_secret = forms.BooleanField(
+        required=False,
+        label="Gerar novo client secret",
+        help_text="O novo valor será exibido uma única vez após salvar. O secret anterior respeitará a janela de sobreposição configurada.",
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance.pk and not self.is_bound:
+            self.fields["role_definitions"].initial = "\n".join(
+                f"{role.name} | {role.description}" for role in self.instance.roles.all()
+            )
+
+    def save(self, commit=True):
+        client = ClientForm.save(self, commit)
+        if commit:
+            names = []
+            for name, description in self.cleaned_data["parsed_roles"]:
+                ClientRole.objects.update_or_create(
+                    client=client,
+                    name=name,
+                    defaults={"description": description},
+                )
+                names.append(name)
+            client.roles.exclude(name__in=names).delete()
+        return client
+
 class ClientRoleForm(StyledFormMixin, forms.ModelForm):
-    groups=forms.ModelMultipleChoiceField(Group.objects.order_by("name"),required=False,label="Grupos")
-    users=forms.ModelMultipleChoiceField(User.objects.order_by("username"),required=False,label="Usuários diretos")
-    service_clients=forms.ModelMultipleChoiceField(OIDCClient.objects.order_by("name"),required=False,label="Service accounts",help_text="Clients que recebem esta role via Client Credentials.")
-    composites=forms.ModelMultipleChoiceField(ClientRole.objects.select_related("client").order_by("client__name","name"),required=False,label="Roles compostas",help_text="Inclui automaticamente as roles selecionadas.")
     class Meta:
         model = ClientRole
-        fields = ("client", "name", "description", "is_default")
-        help_texts = {"is_default": "Concedida por padrão a quem acessa o client."}
-    def __init__(self,*args,**kwargs):
-        super().__init__(*args,**kwargs)
-        if self.instance.pk:
-            self.fields["groups"].initial=self.instance.groups.all()
-            self.fields["users"].initial=self.instance.users.all()
-            self.fields["service_clients"].initial=self.instance.service_clients.all()
-            self.fields["composites"].initial=self.instance.composites.all()
-    def clean(self):
-        data=super().clean(); client=data.get("client"); composites=data.get("composites")
-        if client and composites and composites.exclude(client=client).exists(): self.add_error("composites","Roles compostas devem pertencer ao mesmo client.")
-        if self.instance.pk and composites and composites.filter(pk=self.instance.pk).exists(): self.add_error("composites","Uma role não pode incluir a si mesma.")
-        if self.instance.pk and composites:
-            frontier=set(composites.values_list("pk",flat=True)); visited=set()
-            while frontier:
-                if self.instance.pk in frontier: self.add_error("composites","A composição criaria um ciclo entre roles."); break
-                visited.update(frontier); frontier=set(ClientRole.objects.filter(pk__in=frontier).values_list("composites__pk",flat=True))-visited; frontier.discard(None)
-        return data
-    def save(self,commit=True):
-        role=super().save(commit)
-        if commit:
-            role.groups.set(self.cleaned_data["groups"]); role.users.set(self.cleaned_data["users"]); role.service_clients.set(self.cleaned_data["service_clients"]); role.composites.set(self.cleaned_data["composites"])
-        return role
+        fields = ("client", "name", "description")
 
 class SecurityPolicyForm(StyledFormMixin, forms.ModelForm):
     class Meta:

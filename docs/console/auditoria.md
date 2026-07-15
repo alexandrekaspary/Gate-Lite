@@ -1,34 +1,31 @@
 # Auditoria
 
-A tela **Auditoria** lista os eventos registrados pelo GateLite: quem fez o quê, quando e a partir de qual IP. Exige a permissão `Pode visualizar o log de auditoria`.
+A tela registra eventos de autenticação e administração com data, ação, ator, alvo, metadados e IP. Exige `Pode visualizar o log de auditoria`.
 
-## Filtros e paginação
+## Filtros
 
-| Filtro | O que faz |
-|---|---|
-| **Busca** | Procura por ação, usuário responsável, tipo/identificador do alvo e IP (`icontains`). |
-| **Ação** | Lista suspensa com as ações já registradas no banco, para localizar um tipo específico de evento. |
-| **De / Até** | Intervalo de datas aplicado ao momento do evento. |
+- busca por ação, usuário, alvo ou IP;
+- ação exata;
+- intervalo de datas;
+- paginação de 50 eventos, do mais recente para o mais antigo.
 
-Os resultados são paginados em blocos de 50, do mais recente para o mais antigo.
+Eventos incluem login bem-sucedido ou falho, bloqueio, usuários, grupos, clients, e-mail, senha, 2FA, configurações, chaves e limpeza.
 
-## O que é registrado
+## IP atrás de load balancer
 
-Cada evento guarda ator (quando há um usuário autenticado por trás da ação), ação, tipo e identificador do alvo, metadados em JSON e o IP de origem. Entre os eventos cobertos:
+Sem configuração extra, o GateLite registra `REMOTE_ADDR`, que normalmente será o load balancer. Para usar o IP encaminhado:
 
-| Categoria | Exemplos de ação |
-|---|---|
-| **Autenticação** | `authentication.login`, `authentication.failed`, `authentication.locked_out` |
-| **Contas** | `users.created`, `users.updated`, `users.deleted`, `user.self_registered`, `profile.updated` |
-| **E-mail** | `email.confirmation_requested`, `email.confirmed`, `email.changed_directly` |
-| **Senha** | `password.reset_requested`, `password.reset_completed` |
-| **2FA** | `mfa.enabled`, `mfa.disabled`, `mfa.challenge_succeeded`, `mfa.challenge_failed`, `mfa.recovery_codes_regenerated` |
-| **Administração** | `groups.*`, `clients.*`, `roles.*`, `permissions.*`, `security_policy.updated`, `email_configuration.updated`, `signing_key.rotated` |
+```env
+TRUST_X_FORWARDED_FOR=1
+TRUSTED_PROXY_COUNT=1
+```
 
-Um evento com ator vazio ("Sistema" na listagem) significa uma ação sem usuário autenticado no momento — por exemplo, uma tentativa de login com um usuário inexistente.
+Use a quantidade real de proxies confiáveis. O GateLite escolhe o endereço da direita para a esquerda na cadeia `X-Forwarded-For`, reduzindo o risco de spoofing. Não habilite se clientes puderem acessar a aplicação diretamente sem passar pelo proxy confiável.
 
-## Retenção e limpeza automática
+## Retenção
 
-O campo **Retenção do log de auditoria**, em [Configurações](configuracoes), define por quantos dias um evento permanece armazenado antes de ser apagado. A limpeza roda automaticamente em segundo plano, a cada 24 horas — sem depender de um agendador externo — e também remove códigos, tokens e sessões OIDC expirados. Reduzir o prazo não apaga nada na hora, apenas no próximo ciclo.
+O prazo é configurado em Configurações. A limpeza automática roda de forma oportunista a cada 24 horas. Para executar imediatamente:
 
-Para forçar uma limpeza imediata (por exemplo, logo após reduzir a retenção), rode `python manage.py cleanup_identity` — opcional, nunca necessário para o funcionamento normal.
+```bash
+python manage.py cleanup_identity
+```

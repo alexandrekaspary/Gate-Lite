@@ -1,38 +1,32 @@
 # Grupos
 
-Grupos são o mecanismo de acesso em escala: em vez de atribuir roles usuário por usuário, vincule roles ao grupo e adicione as pessoas. Exige a permissão `Pode gerenciar grupos`.
+Grupos distribuem acesso em escala. Exigem a permissão `Pode gerenciar grupos`.
 
-## Tutorial: criar um grupo
+## Formulário
 
-1. Abra **Grupos → Criar grupo**.
-2. Preencha os campos:
-
-| Campo | O que significa |
+| Etapa | Campos |
 |---|---|
-| **Nome** | Identificador do grupo. É emitido no claim `groups` do JWT quando o scope `groups` é solicitado — escolha nomes que façam sentido para as aplicações (ex.: `Financeiro`). |
-| **Usuários do grupo** | Os membros. Todos herdam imediatamente o que o grupo concede. |
-| **Roles de clients** | Roles herdadas por todos os membros, exibidas como `Client · Role`. É aqui que grupos viram acesso às aplicações. |
-| **Permissões administrativas do grupo** | Permissões do console herdadas pelos membros. Ideal para delegar operação: um grupo "Operadores de suporte" com `Pode gerenciar usuários`, por exemplo. |
+| **Identificação** | Nome do grupo. |
+| **Membros** | Usuários que pertencem ao grupo. |
+| **Roles de clients** | Autorizações herdadas por todos os membros. |
+| **Administração** | Permissões do console herdadas pelos membros. |
 
-3. Salve. Não é preciso reemitir nada: novos tokens já saem com as roles herdadas; tokens já emitidos valem até expirar.
+As listas possuem busca e contador de seleção. Uma role aparece como `Client · Role`, deixando explícita a aplicação à qual pertence.
 
-## Como a herança funciona
+## Herança
 
-- Um usuário pode estar em vários grupos; o efeito é **aditivo** (união deduplicada de roles e permissões).
-- A herança de roles respeita a expiração da atribuição: uma role vinculada ao grupo com data de expiração deixa de ser emitida ao vencer.
-- Remover um usuário do grupo remove as roles herdadas nos **próximos** tokens. Para cortar acesso imediato, revogue as sessões OIDC do usuário (na edição do usuário ou pelo próprio autosserviço).
+- O efeito de vários grupos é aditivo.
+- Roles repetidas são deduplicadas no token.
+- Remover um membro ou uma role afeta os próximos tokens emitidos.
+- Tokens já emitidos continuam válidos até expirar; encerre sessões quando precisar de corte imediato.
 
-## Grupos e a política de acesso restrito
+## Cadastro público
 
-Um client com política `Restrito` só autentica usuários com role atribuída, autorização direta ou que pertençam a um **grupo autorizado** no client. Ou seja, o grupo também pode ser a porta de entrada do client, mesmo sem role — veja [Clients](clients).
-
-## Grupo padrão do cadastro público
-
-Um ou mais grupos podem ser marcados como **Grupos padrão do cadastro**, em [Configurações](configuracoes). Quem se cadastra pela tela pública (`/register/`) entra automaticamente nesses grupos, herdando as mesmas roles e permissões administrativas de qualquer outro membro — revise essa lista com o mesmo cuidado de uma atribuição manual, já que o cadastro é autoatendido.
+Configurações pode definir grupos concedidos automaticamente a quem usa `/register/`. Revise com cuidado qualquer permissão administrativa nesses grupos, pois ela também será concedida aos novos cadastros.
 
 ## Boas práticas
 
-- Modele grupos por função ou equipe, não por aplicação ("Suporte N2", e não "Usuários do portal-web").
-- Prefira `Usuário → Grupo → Role`; deixe atribuições diretas para exceções auditáveis.
-- Ao delegar permissões administrativas via grupo, lembre que a política de MFA `Obrigatório para administradores` passa a valer para os membros.
-- O claim `groups` só inclui grupos **relevantes para o client** (autorizados nele ou com roles do client), evitando vazar a estrutura organizacional inteira para qualquer aplicação.
+- Modele grupos por função ou equipe, como `Financeiro` e `Suporte N2`.
+- Prefira grupo → role para acessos compartilhados.
+- Use roles diretas no usuário somente para exceções.
+- Ao conceder permissões administrativas por grupo, considere a política de MFA para administradores.

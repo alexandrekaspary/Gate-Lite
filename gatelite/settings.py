@@ -50,6 +50,7 @@ INSTALLED_APPS = [
 ]
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware", "whitenoise.middleware.WhiteNoiseMiddleware",
+    "identity.middleware.ClientIPMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware", "django.middleware.csrf.CsrfViewMiddleware",
     "identity.middleware.OIDCCORSMiddleware",
@@ -122,6 +123,15 @@ X_FRAME_OPTIONS = "DENY"
 # cookies seguros ausentes e next= http aceito).
 if os.environ.get("TRUST_PROXY_SSL_HEADER", "0") == "1":
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+# Confie em X-Forwarded-For somente quando todo acesso ao app passar por proxies
+# que anexem o IP de origem ao header. A contagem parte do proxy conectado ao Django.
+TRUST_X_FORWARDED_FOR = os.environ.get("TRUST_X_FORWARDED_FOR", "0") == "1"
+try:
+    TRUSTED_PROXY_COUNT = int(os.environ.get("TRUSTED_PROXY_COUNT", "1"))
+except ValueError as exc:
+    raise ImproperlyConfigured("TRUSTED_PROXY_COUNT deve ser um número inteiro positivo.") from exc
+if TRUSTED_PROXY_COUNT < 1:
+    raise ImproperlyConfigured("TRUSTED_PROXY_COUNT deve ser um número inteiro positivo.")
 OIDC_ISSUER = os.environ.get("OIDC_ISSUER", "http://localhost:8000").rstrip("/")
 KEY_ENCRYPTION_SECRET = os.environ.get("KEY_ENCRYPTION_SECRET", SECRET_KEY)
 if not DEBUG and "KEY_ENCRYPTION_SECRET" not in os.environ:

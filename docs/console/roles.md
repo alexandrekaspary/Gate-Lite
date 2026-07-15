@@ -1,47 +1,41 @@
-# Roles por client
+# Roles dos clients
 
-Roles são as autorizações que as aplicações leem no JWT. Cada role pertence a **exatamente um client** — `finance-api · reader` e `support-api · reader` são roles diferentes e não conflitam. Gerencie em **Clients → Roles** ou em **Configurações → Roles dos clients** (permissão `Pode gerenciar clients e roles`).
+Uma role é uma autorização pertencente a um client. Ela é emitida no access token nos claims `roles` e `resource_access.<client_id>.roles`.
 
-## Campos do formulário
+## Definir roles
 
-| Campo | O que significa |
-|---|---|
-| **Client** | Dono da role. A role só é emitida em tokens cuja audience é este client. |
-| **Nome** | Slug emitido no claim `roles` e em `resource_access.<client>.roles`. Único dentro do client. |
-| **Descrição** | Texto livre para operadores. |
-| **Role padrão** | Concedida automaticamente a todo usuário **com acesso ao client** (não a todos os usuários do GateLite). Útil para um nível básico, ex.: `viewer`. |
-| **Grupos** | Todos os membros herdam a role. O caminho recomendado. |
-| **Usuários diretos** | Exceções individuais. |
-| **Service accounts** | Clients confidenciais que recebem esta role em tokens de Client Credentials. |
-| **Roles compostas** | Outras roles **do mesmo client** incluídas automaticamente. Ex.: `admin` compõe `editor` que compõe `reader`. Ciclos são bloqueados na validação. |
+Roles não possuem uma tela de cadastro separada. Crie ou edite o client e use a última etapa do wizard:
 
-## Atribuições: responsável e expiração
+```text
+reader | Consulta dados
+editor | Altera dados
+```
 
-Cada vínculo (usuário, grupo ou service account) registra **quem atribuiu** e aceita uma **data de expiração** opcional. Uma atribuição expirada simplesmente deixa de ser emitida nos próximos tokens — ótima para acessos temporários (consultorias, plantões). A expiração também é respeitada na política de acesso restrito do client.
+Cada linha exige um nome compatível com slug e uma descrição. O nome é único dentro do client. Na edição, omitir uma role existente remove essa role e suas atribuições.
 
-## Como as roles chegam na API
+## Atribuir roles
 
-Um access token com `aud: portal-api` para um usuário com `editor` (direta) e `reader` (herdada por composição) contém:
+Há dois caminhos no console:
+
+- **Grupos → Roles de clients**: todos os membros herdam as roles selecionadas. É o caminho recomendado.
+- **Usuários → Roles diretas de clients**: use para exceções individuais.
+
+Uma mesma pessoa pode receber a mesma role por mais de um caminho; o JWT contém uma lista deduplicada.
+
+## Consumir na API
+
+Exemplo de access token destinado ao client `portal-api`:
 
 ```json
 {
   "aud": "portal-api",
-  "roles": ["editor", "reader"],
+  "roles": ["reader", "editor"],
   "resource_access": {
-    "portal-api": { "roles": ["editor", "reader"] }
+    "portal-api": { "roles": ["reader", "editor"] }
   }
 }
 ```
 
-Na API, valide sempre o conjunto completo: assinatura, `iss`, `exp`, `aud` **e então** as roles em `resource_access.<sua-api>.roles`. Nunca autorize apenas pela existência de um nome de role sem checar a audience — o mesmo nome pode existir em outro client. Exemplos de código em [Integração OIDC](integracao).
+A API deve validar assinatura, algoritmo, issuer, expiração e audience antes de confiar nas roles. O mesmo nome pode existir em clients diferentes, portanto nunca autorize apenas pelo texto da role sem validar `aud`.
 
-## Resolução das roles efetivas
-
-Para um usuário em um client, o GateLite emite a união deduplicada de:
-
-1. roles atribuídas diretamente (não expiradas);
-2. roles herdadas dos grupos (não expiradas);
-3. roles padrão do client;
-4. fecho transitivo das roles compostas dos itens anteriores.
-
-Superusuários têm acesso administrativo ao GateLite, mas **não** ganham roles automaticamente — a API continua decidindo pela claim do token.
+Superusuários administram o GateLite, mas não recebem automaticamente roles das aplicações.

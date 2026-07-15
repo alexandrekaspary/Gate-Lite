@@ -1,83 +1,60 @@
 # Usuários
 
-Gerencie identidades em **Usuários** no menu lateral. A listagem tem busca por username, nome ou e-mail e filtro por status (ativo/inativo). Exige a permissão `Pode gerenciar usuários`.
+Usuários representam identidades humanas. A área exige `Pode gerenciar usuários` e oferece busca, filtro de status, criação, edição e exclusão.
 
-## Tutorial: criar um usuário
+## Criação
 
-O formulário é dividido em quatro etapas.
+### Identidade
 
-### Etapa 1 — Identidade
+- **Usuário**: identificador de login e claim `preferred_username`.
+- **Nome e sobrenome**: claims do scope `profile`.
+- **E-mail**: usado em confirmação e recuperação; não diferencia maiúsculas e minúsculas.
+- **Idioma e fuso horário**: começam com os padrões de Configurações.
 
-| Campo | O que significa |
-|---|---|
-| **Usuário (username)** | Identificador de login. No autosserviço o usuário **nunca** consegue alterá-lo; ele aparece nos JWTs como `preferred_username`. |
-| **Nome / Sobrenome** | Compõem os claims `given_name`, `family_name` e `name` quando o scope `profile` é solicitado. |
-| **E-mail** | Opcional, mas necessário para confirmação e recuperação de senha. Endereços são únicos (sem diferenciar maiúsculas). Ao salvar, o GateLite envia automaticamente um link de confirmação. |
-| **Idioma / Fuso horário** | Pré-selecionados com os padrões definidos em [Configurações](configuracoes). Saem nos JWTs como os claims `locale` e `zoneinfo` quando o scope `profile` é solicitado. |
+### Segurança
 
-### Etapa 2 — Segurança
+- Senha e confirmação seguem a política global.
+- **Exigir troca de senha no próximo login** restringe a conta até a troca.
+- Usuário inativo não autentica.
 
-| Campo | O que significa |
-|---|---|
-| **Senha / Confirmação** | Validadas pela [política de senha](configuracoes) vigente. |
-| **Exigir troca de senha no próximo login** | Útil ao definir uma senha temporária: depois de autenticar, o usuário fica restrito à tela de troca de senha até concluir a alteração. |
-| **Ativo** | Desmarque em vez de excluir a conta: um usuário inativo não faz login e tem sessões OIDC e refresh tokens revogados imediatamente. |
+### Acessos
 
-### Etapa 3 — Acessos
+- **Grupos** concedem roles de aplicações e permissões administrativas.
+- **Roles diretas de clients** atendem exceções individuais.
 
-| Campo | O que significa |
-|---|---|
-| **Grupos** | O usuário herda as roles de clients e as permissões administrativas de todos os grupos. Caminho recomendado para qualquer acesso compartilhado. |
-| **Roles diretas de clients** | Exceções individuais. Aparecem como `Client · Role`. Prefira grupos — atribuições diretas dificultam revisão de acesso. |
+### Administração
 
-Use o campo **Filtrar opções…** de cada lista para localizar itens rapidamente.
+- **Acesso básico** representa o autosserviço concedido a toda conta.
+- **Staff** permite acesso ao Django Admin.
+- **Permissões administrativas** liberam áreas específicas do console.
 
-### Etapa 4 — Administração
+## Edição
 
-| Campo | O que significa |
-|---|---|
-| **Acesso básico** | Informativo: todo usuário recebe automaticamente `ver o próprio perfil` e `alterar a própria senha`. |
-| **Membro da equipe (staff)** | Permite entrar no Django Admin (`/admin/`). O Admin usa o mesmo fluxo de login e 2FA do GateLite. Raramente necessário. |
-| **Superusuário** (só na edição) | Ignora todas as verificações de permissão, inclusive a política de acesso restrito dos clients. Mantenha pouquíssimos. |
-| **Permissões administrativas** | Acessos ao console, detalhados abaixo. |
+A edição também permite:
+
+- definir uma nova senha, revogando outras sessões;
+- marcar ou remover a troca obrigatória;
+- redefinir o TOTP e recovery codes;
+- alterar e-mail, iniciando nova confirmação;
+- conceder superusuário, quando o operador possui autoridade para isso.
 
 ## Permissões administrativas
 
-Estas permissões controlam o próprio GateLite e **não** são enviadas às aplicações:
-
 | Permissão | Libera |
 |---|---|
-| Pode acessar o console de identidade | O menu Console e a Visão geral |
-| Pode gerenciar usuários | Listar, criar, editar e excluir usuários |
-| Pode gerenciar grupos | Grupos e seus vínculos |
-| Pode gerenciar clients e roles | Clients OIDC e as roles de cada client |
-| Pode gerenciar políticas de segurança | Editar as Configurações |
-| Pode gerenciar chaves de assinatura | Ver e rotacionar chaves RSA |
-| Pode gerenciar permissões administrativas | Conceder/editar estas próprias permissões |
-| Pode visualizar o log de auditoria | Tela [Auditoria](auditoria): eventos, filtros e paginação |
+| Acessar o console | Visão geral e navegação administrativa. |
+| Gerenciar usuários | CRUD de usuários. |
+| Gerenciar grupos | Membros, roles e permissões de grupos. |
+| Gerenciar clients e roles | Wizard de clients, roles e client secrets. |
+| Gerenciar políticas de segurança | Página Configurações. |
+| Gerenciar chaves de assinatura | Rotação RSA e JWKS. |
+| Gerenciar permissões administrativas | Cadastro dessas permissões. |
+| Visualizar auditoria | Eventos, filtros e retenção. |
 
-Qualquer permissão administrativa (ou superusuário/staff) também classifica o usuário como "administrador" para a política de MFA `Obrigatório para administradores`.
+Permissões administrativas não são roles de aplicação e não entram no JWT como autorização de negócio.
 
-## Edição de usuário
+## Cadastro público e autosserviço
 
-Além dos campos de criação, a edição oferece:
+Quando habilitado, `/register/` cria contas com os grupos padrão configurados. Em **Minha conta**, cada usuário pode editar perfil, trocar senha, confirmar e-mail, configurar 2FA e encerrar sessões OIDC.
 
-- **Nova senha / Confirme a nova senha** — deixe ambas em branco para manter a atual. As duas precisam coincidir e seguem a política de senha. Definir uma senha revoga as outras sessões do usuário.
-- **Exigir troca de senha no próximo login** — restringe o usuário à tela de troca de senha depois que ele se autenticar. A tela pede somente a nova senha e sua confirmação, sem pedir a senha temporária/anterior. Pode ser usado junto de uma senha temporária ou para exigir a renovação da senha atual.
-- **Redefinir 2FA** — remove o autenticador e os recovery codes. Use quando o usuário perdeu o dispositivo; ele configura o TOTP de novo no próximo login (conforme a política).
-- **E-mail** — trocar o endereço aqui deixa a confirmação **pendente**: o endereço só passa a valer como confirmado depois que o dono clicar no link. A claim `email_verified` reflete exatamente isso.
-
-## Cadastro público
-
-Além da criação pelo console, visitantes podem criar a própria conta em `/register/` quando a opção **Habilitar cadastro de novos usuários** estiver ativa em [Configurações](configuracoes). A tela pede usuário, nome, sobrenome, e-mail e senha — sem acesso a grupos, roles ou permissões administrativas.
-
-- A conta nasce com os **Grupos padrão do cadastro** definidos em Configurações, exatamente como se um administrador os tivesse marcado na criação.
-- Idioma, fuso horário, confirmação de e-mail e política de senha seguem os mesmos padrões e comportamentos automáticos de uma conta criada no console.
-- Com o cadastro desativado, a URL redireciona para o login e o link "Cadastre-se" some da tela de login.
-
-## Comportamentos automáticos
-
-- **Confirmação de e-mail**: criada a conta com e-mail, um link temporário e de uso único é enviado. O reenvio respeita o intervalo configurado. Confirmar não desconecta nada: a sessão atual (e quaisquer outras) permanece ativa, sem revogar sessões OIDC ou refresh tokens.
-- **Bloqueio por força bruta**: erros consecutivos de senha bloqueiam temporariamente o login (configurável). O contador zera em login bem-sucedido; o desafio TOTP tem um bloqueio próprio e independente.
-- **Revogação em eventos críticos**: trocar senha, ativar/desativar 2FA ou desativar a conta revoga sessões web, sessões OIDC e refresh tokens.
-- **Autosserviço**: em **Minha conta**, o usuário edita nome e e-mail (nunca o username), troca a senha, gerencia o 2FA e encerra sessões OIDC que não reconhece.
+Eventos críticos — troca de senha, redefinição/alteração de 2FA e desativação — invalidam sessões e refresh tokens conforme a política de segurança.

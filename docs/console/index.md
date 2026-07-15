@@ -1,51 +1,44 @@
 # Visão geral do GateLite
 
-O GateLite é um provedor de identidade e Single Sign-On construído sobre OpenID Connect. Ele centraliza o login dos usuários, emite JWTs assinados com RSA e controla o que cada aplicação recebe em termos de identidade e autorização. O modelo lembra o Keycloak, mas com um único domínio de identidade: não existem realms nem multi-tenancy.
+O GateLite é um provedor de identidade e Single Sign-On baseado em OpenID Connect. Ele centraliza usuários, login, segundo fator, aplicações integradas e emissão de JWTs assinados com RSA.
 
-## Conceitos fundamentais
+## Conceitos principais
 
-| Conceito | O que é |
+| Conceito | Uso no GateLite |
 |---|---|
-| **Usuário** | Uma identidade que faz login com senha (e opcionalmente TOTP). Acumula acessos por grupos e atribuições diretas. |
-| **Grupo** | Conjunto de usuários. Membros herdam automaticamente as roles de clients e as permissões administrativas vinculadas ao grupo. |
-| **Client** | Uma aplicação integrada via OIDC: SPA, aplicativo nativo, backend web, service account ou resource server (API). |
-| **Role** | Autorização que pertence a exatamente um client e é emitida no JWT (claims `roles` e `resource_access`). O mesmo nome pode existir em clients diferentes sem conflito. |
-| **Scope** | Conjunto de claims que o client pode solicitar (`openid`, `profile`, `email`, `groups`, `offline_access`, ou scopes customizados). |
-| **Audience** | O destinatário do access token (claim `aud`) — tipicamente a API que vai validá-lo. Um client só solicita audiences autorizadas para ele. |
-| **Service account** | Um client confidencial que autentica sozinho via Client Credentials, sem usuário. Recebe roles próprias. |
-| **Permissão administrativa** | Controla o próprio GateLite (acesso ao console, gerenciar usuários, chaves etc.). **Não** é enviada às aplicações — é diferente de role. |
+| **Usuário** | Identidade que entra com senha e, quando exigido, TOTP. |
+| **Grupo** | Conjunto de usuários que compartilha roles de aplicações e permissões administrativas. |
+| **Client** | Aplicação OIDC: SPA, mobile/desktop, backend web, serviço máquina a máquina ou API. |
+| **Role** | Autorização pertencente a um client, emitida nos claims `roles` e `resource_access`. |
+| **Scope** | Permissão solicitada ao protocolo, como `openid`, `profile`, `email`, `groups` e `offline_access`. |
+| **Client secret** | Credencial de um client confidencial. Não é um access token. |
+| **Permissão administrativa** | Autoriza ações no console do GateLite; não é enviada às aplicações. |
 
-## Como o acesso funciona
+## Fluxo de acesso
 
 ```text
-Usuário ──┬── atribuição direta ────────┐
-          └── membro de Grupo ── role ──┼──▶ Roles efetivas do Client
-                    roles padrão ───────┤         │
-                    roles compostas ────┘         ▼
-                                          JWT: roles / resource_access
+Usuário ──► Grupo ──► Role do client ──► JWT
+   └──────── Role direta ───────────────► JWT
 ```
 
-As roles efetivas são a união deduplicada das atribuições diretas, das herdadas por grupos, das roles padrão do client e das incluídas por composição. A role sempre pertence ao seu client e só é emitida para a audience correspondente.
+As roles são definidas na etapa **Roles** do próprio client. Depois, podem ser distribuídas no formulário de grupos ou diretamente no formulário de usuários. O caminho recomendado é usuário → grupo → role.
 
-## Mapa da documentação
+## Console
 
-- **[Primeiros passos](primeiros-passos)** — a ordem recomendada para configurar um ambiente novo.
-- **[Usuários](usuarios)** — criar e editar usuários, cada campo explicado, e-mail e bloqueios.
-- **[Grupos](grupos)** — organizar acessos compartilhados e permissões do console.
-- **[Clients](clients)** — cadastrar aplicações: tipos, fluxos, URLs, scopes, audiences e secrets.
-- **[Roles](roles)** — autorizações por client: padrão, compostas e atribuições com expiração.
-- **[Configurações](configuracoes)** — cada item da política de segurança, tokens e chaves.
-- **[Auditoria](auditoria)** — eventos registrados, filtros e retenção do log.
-- **[Integração OIDC](integracao)** — endpoints, exemplos de código e validação de JWT.
-
-## Onde cada coisa fica no console
-
-| Menu | Conteúdo |
+| Área | Conteúdo |
 |---|---|
-| Visão geral | Contadores, endpoint de descoberta e ações rápidas |
-| Usuários / Grupos / Clients | Listagens com busca, filtros e formulários |
-| Configurações | Política de segurança global, permissões, roles e chaves |
-| Auditoria | Log de eventos de segurança e alterações administrativas |
-| Documentação | Estas páginas |
+| **Visão geral** | Contadores, endpoint de descoberta e ações rápidas. |
+| **Usuários** | Identidades, credenciais, grupos, roles diretas e permissões. |
+| **Grupos** | Membros, roles compartilhadas e permissões administrativas. |
+| **Clients** | Aplicações, protocolo, URLs, CORS, scopes, roles e client secrets. |
+| **Configurações** | Cadastro, localização, SMTP, segurança, tokens, auditoria e atalhos administrativos. |
+| **Auditoria** | Eventos, ator, alvo, data e IP de origem. |
+| **Documentação** | Estas páginas. |
 
-O acesso a cada menu depende das permissões administrativas do operador — veja a tabela completa em [Usuários](usuarios).
+## Próximas leituras
+
+- [Primeiros passos](primeiros-passos)
+- [Usuários](usuarios) e [Grupos](grupos)
+- [Clients](clients) e [Roles](roles)
+- [Configurações](configuracoes) e [Auditoria](auditoria)
+- [Integração OIDC](integracao)

@@ -69,6 +69,15 @@
     }
   });
 
+  document.querySelectorAll('[data-dismiss-secret]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const card = button.closest('.secret-card');
+      const secret = card?.querySelector('#new-client-secret');
+      if (secret) secret.textContent = '';
+      card?.remove();
+    });
+  });
+
   const writeClipboard = async (value) => {
     if (navigator.clipboard && window.isSecureContext) {
       await navigator.clipboard.writeText(value);

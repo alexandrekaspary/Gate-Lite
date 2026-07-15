@@ -33,8 +33,8 @@ from django.views.decorators.debug import sensitive_post_parameters
 from django.views.decorators.http import require_http_methods, require_POST
 from .crypto import generate_key
 from .crypto import decrypt_value, encrypt_value
-from .forms import AccountProfileForm, ClientForm, ClientRoleForm, EmailConfigurationForm, GroupForm, MFAChallengeForm, MFASetupConfirmForm, PasswordAndMFAForm, PermissionForm, SecurityPolicyForm, SecureSetPasswordForm, UserCreateForm, UserEditForm, UserRegistrationForm, VerifiedEmailPasswordResetForm
-from .models import AuditEvent, AuthorizationCode, ClientRole, EmailConfiguration, GroupClientRoleAssignment, MFAChallenge, OIDCClient, OIDCScope, OIDCSession, RefreshToken, RevokedAccessToken, SecurityPolicy, ServiceAccountRoleAssignment, SigningKey, UserClientRoleAssignment, UserMFA, UserPreferences, UserSecurityState
+from .forms import AccountProfileForm, ClientCreateForm, ClientEditForm, EmailConfigurationForm, GroupForm, MFAChallengeForm, MFASetupConfirmForm, PasswordAndMFAForm, PermissionForm, SecurityPolicyForm, SecureSetPasswordForm, UserCreateForm, UserEditForm, UserRegistrationForm, VerifiedEmailPasswordResetForm
+from .models import AuditEvent, AuthorizationCode, EmailConfiguration, GroupClientRoleAssignment, MFAChallenge, OIDCClient, OIDCScope, OIDCSession, RefreshToken, RevokedAccessToken, SecurityPolicy, SigningKey, UserClientRoleAssignment, UserMFA, UserPreferences, UserSecurityState
 from .email_verification import EmailAlreadyInUse, EmailConfirmationThrottled, InvalidEmailConfirmation, consume_confirmation_token, get_email_state, inspect_confirmation_token, mask_email, request_email_confirmation
 from .email_backend import email_delivery_enabled
 from .mfa import enable_mfa, generate_totp_secret, hash_recovery_codes, invalidate_web_sessions, matching_counter, provisioning_uri, qr_data_uri, generate_recovery_codes, record_mfa_failure, rotate_security_version, session_binding, verify_mfa
@@ -605,45 +605,42 @@ def dashboard(request):
     if not has_any_console_permission(request.user): raise PermissionDenied
     return render(request,"console/dashboard.html",{"users":User.objects.count(),"groups":Group.objects.count(),"clients":OIDCClient.objects.count(),"keys":SigningKey.objects.count()})
 
-MODELS={"users":(User,UserCreateForm,UserEditForm,"Usuários"),"groups":(Group,GroupForm,GroupForm,"Grupos"),"permissions":(Permission,PermissionForm,PermissionForm,"Permissões"),"clients":(OIDCClient,ClientForm,ClientForm,"Clients OIDC"),"roles":(ClientRole,ClientRoleForm,ClientRoleForm,"Roles por client")}
+MODELS={"users":(User,UserCreateForm,UserEditForm,"Usuários"),"groups":(Group,GroupForm,GroupForm,"Grupos"),"permissions":(Permission,PermissionForm,PermissionForm,"Permissões"),"clients":(OIDCClient,ClientCreateForm,ClientEditForm,"Clients OIDC")}
 @login_required
 def object_list(request, kind):
-    require_console_permission(request,{"users":"manage_users","groups":"manage_groups","clients":"manage_clients","roles":"manage_clients","permissions":"manage_permissions"}[kind])
+    if kind == "roles": return redirect("console:list", kind="clients")
+    require_console_permission(request,{"users":"manage_users","groups":"manage_groups","clients":"manage_clients","permissions":"manage_permissions"}[kind])
     model,_,_,title=MODELS[kind]; objects=model.objects.all()
     if kind=="users": objects=objects.order_by("username")
     elif kind=="groups": objects=objects.order_by("name")
     elif kind=="permissions": objects=objects.order_by("content_type__app_label","codename")
     if kind=="permissions": objects=objects.select_related("content_type")
-    if kind=="roles": objects=objects.select_related("client").prefetch_related("groups")
     if kind=="groups": objects=objects.prefetch_related("user_set", "oidc_client_roles")
     if kind=="users": objects=objects.prefetch_related("groups","direct_oidc_client_roles")
     if kind=="clients": objects=objects.prefetch_related("roles","scope_assignments__scope")
     query=request.GET.get("q", "").strip()
     if query:
-        filters={"users":Q(username__icontains=query)|Q(email__icontains=query)|Q(first_name__icontains=query)|Q(last_name__icontains=query),"groups":Q(name__icontains=query),"clients":Q(name__icontains=query)|Q(client_id__icontains=query),"roles":Q(name__icontains=query)|Q(client__name__icontains=query),"permissions":Q(name__icontains=query)|Q(codename__icontains=query)}
+        filters={"users":Q(username__icontains=query)|Q(email__icontains=query)|Q(first_name__icontains=query)|Q(last_name__icontains=query),"groups":Q(name__icontains=query),"clients":Q(name__icontains=query)|Q(client_id__icontains=query),"permissions":Q(name__icontains=query)|Q(codename__icontains=query)}
         objects=objects.filter(filters[kind]).distinct()
     status=request.GET.get("status")
     if status in ("active","inactive") and kind in ("users","clients"): objects=objects.filter(is_active=status=="active")
-    client_filter=request.GET.get("client")
-    if client_filter and kind=="roles": objects=objects.filter(client_id=client_filter)
     page_obj=Paginator(objects,25).get_page(request.GET.get("page"))
     secret=request.session.pop("new_client_secret", None)
-    return render(request,"console/list.html",{"objects":page_obj.object_list,"page_obj":page_obj,"kind":kind,"title":title,"new_client_secret":secret,"clients_filter":OIDCClient.objects.all() if kind=="roles" else None})
+    return render(request,"console/list.html",{"objects":page_obj.object_list,"page_obj":page_obj,"kind":kind,"title":title,"new_client_secret":secret})
 @login_required
 def object_form(request, kind, pk=None):
-    require_console_permission(request,{"users":"manage_users","groups":"manage_groups","clients":"manage_clients","roles":"manage_clients","permissions":"manage_permissions"}[kind])
+    if kind == "roles": return redirect("console:create", kind="clients")
+    require_console_permission(request,{"users":"manage_users","groups":"manage_groups","clients":"manage_clients","permissions":"manage_permissions"}[kind])
     model,create_form,edit_form,title=MODELS[kind]; obj=get_object_or_404(model,pk=pk) if pk else None; form_class=edit_form if obj else create_form
     form=form_class(request.POST or None, instance=obj)
     if kind=="users": form.request=request
     if form.is_valid():
         item=form.save()
-        if kind=="roles":
-            UserClientRoleAssignment.objects.filter(role=item,assigned_by__isnull=True).update(assigned_by=request.user); GroupClientRoleAssignment.objects.filter(role=item,assigned_by__isnull=True).update(assigned_by=request.user); ServiceAccountRoleAssignment.objects.filter(role=item,assigned_by__isnull=True).update(assigned_by=request.user)
-        elif kind=="users": UserClientRoleAssignment.objects.filter(user=item,assigned_by__isnull=True).update(assigned_by=request.user)
+        if kind=="users": UserClientRoleAssignment.objects.filter(user=item,assigned_by__isnull=True).update(assigned_by=request.user)
         elif kind=="groups": GroupClientRoleAssignment.objects.filter(group=item,assigned_by__isnull=True).update(assigned_by=request.user)
         if kind=="clients" and item.client_type==OIDCClient.ClientType.PUBLIC:
             item.secrets.filter(revoked_at__isnull=True).update(revoked_at=timezone.now())
-        elif kind=="clients" and (not obj or form.cleaned_data.get("generate_secret")):
+        elif kind=="clients" and (not obj or form.cleaned_data.get("generate_secret") or form.cleaned_data.get("rotate_secret") or not item.secrets.filter(revoked_at__isnull=True).exists()):
             raw=secrets.token_urlsafe(40); item.set_secret(raw); request.session["new_client_secret"]=raw
         audit(request,f"{kind}.{'updated' if obj else 'created'}",item)
         if getattr(form,"email_confirmation_error",None):
@@ -655,7 +652,8 @@ def object_form(request, kind, pk=None):
 @login_required
 @require_POST
 def object_delete(request, kind, pk):
-    require_console_permission(request,{"users":"manage_users","groups":"manage_groups","clients":"manage_clients","roles":"manage_clients","permissions":"manage_permissions"}[kind])
+    if kind == "roles": return redirect("console:list", kind="clients")
+    require_console_permission(request,{"users":"manage_users","groups":"manage_groups","clients":"manage_clients","permissions":"manage_permissions"}[kind])
     model,*_=MODELS[kind]; item=get_object_or_404(model,pk=pk); audit(request,f"{kind}.deleted",item,{"label":str(item)}); item.delete(); messages.success(request,"Registro removido."); return redirect("console:list",kind=kind)
 @login_required
 def keys(request):
@@ -694,7 +692,7 @@ DOCS_PAGES = {
     "usuarios": ("Usuários", "Criação, campos, permissões e comportamentos automáticos"),
     "grupos": ("Grupos", "Acessos compartilhados, herança e boas práticas"),
     "clients": ("Clients", "Aplicações OIDC: tipos, fluxos, URLs, scopes e secrets"),
-    "roles": ("Roles", "Autorizações por client, composição e atribuições"),
+    "roles": ("Roles", "Autorizações cadastradas e editadas no fluxo de cada client"),
     "configuracoes": ("Configurações", "Cada item da política de segurança, tokens e chaves"),
     "auditoria": ("Auditoria", "Eventos registrados, filtros e retenção do log"),
     "integracao": ("Integração OIDC", "Endpoints, exemplos de código e validação de JWT"),

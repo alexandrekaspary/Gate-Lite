@@ -2,14 +2,40 @@
 
 from django.contrib.auth.models import Permission, User
 from django.core.management import call_command
-from django.test import TestCase
+from django.test import RequestFactory, SimpleTestCase, TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
 from .models import AuditEvent, SecurityPolicy
+from .middleware import ClientIPMiddleware
 
 
 PASSWORD = "Strong-password-123!"
+
+
+class ClientIPMiddlewareTests(SimpleTestCase):
+    def resolve(self, remote, forwarded=None):
+        request = RequestFactory().get("/", REMOTE_ADDR=remote)
+        if forwarded is not None:
+            request.META["HTTP_X_FORWARDED_FOR"] = forwarded
+        ClientIPMiddleware(lambda req: None)(request)
+        return request.META["REMOTE_ADDR"]
+
+    @override_settings(TRUST_X_FORWARDED_FOR=False, TRUSTED_PROXY_COUNT=1)
+    def test_ignores_forwarded_header_by_default(self):
+        self.assertEqual(self.resolve("10.0.0.10", "203.0.113.8"), "10.0.0.10")
+
+    @override_settings(TRUST_X_FORWARDED_FOR=True, TRUSTED_PROXY_COUNT=1)
+    def test_uses_address_appended_by_one_trusted_proxy(self):
+        self.assertEqual(self.resolve("10.0.0.10", "198.51.100.99, 203.0.113.8"), "203.0.113.8")
+
+    @override_settings(TRUST_X_FORWARDED_FOR=True, TRUSTED_PROXY_COUNT=2)
+    def test_supports_two_trusted_proxy_hops(self):
+        self.assertEqual(self.resolve("10.0.0.11", "198.51.100.99, 203.0.113.8, 10.0.0.10"), "203.0.113.8")
+
+    @override_settings(TRUST_X_FORWARDED_FOR=True, TRUSTED_PROXY_COUNT=1)
+    def test_falls_back_to_direct_address_when_forwarded_value_is_invalid(self):
+        self.assertEqual(self.resolve("10.0.0.10", "not-an-ip"), "10.0.0.10")
 
 
 def permission(codename):

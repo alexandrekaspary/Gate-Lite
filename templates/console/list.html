@@ -6,34 +6,23 @@
   {% if kind == 'users' %}<p>Gerencie identidades, status e atribuições de acesso.</p>
   {% elif kind == 'groups' %}<p>Organize usuários e distribua roles de aplicações em escala.</p>
   {% elif kind == 'clients' %}<p>Configure aplicações públicas ou confidenciais conectadas ao GateLite.</p>
-  {% elif kind == 'roles' %}<p>Defina as roles disponíveis em cada client.</p>
   {% elif kind == 'permissions' %}<p>Consulte e organize permissões administrativas da plataforma.</p>{% endif %}
 {% endblock %}
 {% block actions %}
-  {% if kind == 'clients' %}
-  <a class="btn" href="{% url 'console:list' 'roles' %}">
-    <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></svg>
-    Roles dos clients
-  </a>
-  {% elif kind == 'roles' %}
-  <a class="btn" href="{% url 'console:list' 'clients' %}">
-    <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>
-    Voltar aos clients
-  </a>
-  {% endif %}
   <a class="btn primary" href="{% url 'console:create' kind %}">
     <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
-    {% if kind == 'users' %}Novo usuário{% elif kind == 'groups' %}Novo grupo{% elif kind == 'clients' %}Novo client{% elif kind == 'roles' %}Nova role{% else %}Nova permissão{% endif %}
+    {% if kind == 'users' %}Novo usuário{% elif kind == 'groups' %}Novo grupo{% elif kind == 'clients' %}Novo client{% else %}Nova permissão{% endif %}
   </a>
 {% endblock %}
 
 {% block content %}
 {% if new_client_secret %}
 <section class="secret-card" role="status" aria-labelledby="secret-title">
+  <button class="secret-close" type="button" data-dismiss-secret aria-label="Fechar e ocultar client secret" title="Ocultar client secret">×</button>
   <div class="secret-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m11.5 11.5 8-8M17 6l2 2M14 9l2 2"/></svg></div>
   <div class="secret-content">
-    <h2 id="secret-title">Client secret criado</h2>
-    <p>Copie e armazene o valor com segurança. Por proteção, ele não será exibido novamente.</p>
+    <h2 id="secret-title">Client secret gerado</h2>
+    <p>Esta é a credencial da aplicação backend, não um access token. Copie e armazene com segurança: ela não será exibida novamente.</p>
     <div class="code-field secret-value">
       <code id="new-client-secret">{{ new_client_secret }}</code>
       <button class="copy-button" type="button" data-copy-target="#new-client-secret" aria-label="Copiar client secret">
@@ -42,13 +31,6 @@
     </div>
   </div>
 </section>
-{% endif %}
-
-{% if kind == 'clients' or kind == 'roles' %}
-<nav class="context-tabs" aria-label="Seções de clients">
-  <a class="{% if kind == 'clients' %}is-active{% endif %}" href="{% url 'console:list' 'clients' %}" {% if kind == 'clients' %}aria-current="page"{% endif %}>Clients</a>
-  <a class="{% if kind == 'roles' %}is-active{% endif %}" href="{% url 'console:list' 'roles' %}" {% if kind == 'roles' %}aria-current="page"{% endif %}>Roles</a>
-</nav>
 {% endif %}
 
 <section class="data-section" aria-labelledby="results-title">
@@ -65,15 +47,6 @@
         <option value="">Todos os status</option>
         <option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>Ativos</option>
         <option value="inactive" {% if request.GET.status == 'inactive' %}selected{% endif %}>Inativos</option>
-      </select>
-    </div>
-    {% endif %}
-    {% if kind == 'roles' %}
-    <div class="filter-control">
-      <label class="sr-only" for="client-filter">Filtrar por client</label>
-      <select id="client-filter" name="client" class="input">
-        <option value="">Todos os clients</option>
-        {% for client in clients_filter %}<option value="{{ client.pk }}" {% if request.GET.client == client.pk|stringformat:'s' %}selected{% endif %}>{{ client.name }}</option>{% endfor %}
       </select>
     </div>
     {% endif %}
@@ -108,7 +81,6 @@
                   <strong>{{ object }}</strong>
                   {% if kind == 'users' %}<small>{% if object.get_full_name %}{{ object.get_full_name }}{% else %}@{{ object.username }}{% endif %}</small>
                   {% elif kind == 'clients' %}<small class="monospace">{{ object.client_id }}</small>
-                  {% elif kind == 'roles' %}<small>{{ object.client.name }}</small>
                   {% elif kind == 'permissions' %}<small class="monospace">{{ object.codename }}</small>{% endif %}
                 </span>
               </div>
@@ -117,7 +89,6 @@
               {% if kind == 'users' %}<span class="primary-detail">{{ object.email|default:'E-mail não informado' }}</span><small>{{ object.groups.count }} grupo{{ object.groups.count|pluralize }} · {{ object.direct_oidc_client_roles.count }} role{{ object.direct_oidc_client_roles.count|pluralize }} direta{{ object.direct_oidc_client_roles.count|pluralize }}</small>
               {% elif kind == 'permissions' %}<span class="code-badge">{{ object.content_type.app_label }}.{{ object.codename }}</span>
               {% elif kind == 'clients' %}<span class="type-badge">{% if object.is_confidential %}Confidencial{% else %}Público · PKCE{% endif %}</span><small>{{ object.get_application_type_display }} · {{ object.roles.count }} role{{ object.roles.count|pluralize }} · {{ object.scope_names|join:', '|default:'Sem scopes' }}</small>
-              {% elif kind == 'roles' %}<span class="primary-detail">{{ object.description|default:'Sem descrição' }}</span><small>{{ object.groups.count }} grupo{{ object.groups.count|pluralize }} · {{ object.users.count }} usuário{{ object.users.count|pluralize }} direto{{ object.users.count|pluralize }}</small>
               {% elif kind == 'groups' %}<span class="primary-detail">{{ object.user_set.count }} usuário{{ object.user_set.count|pluralize }}</span><small>{{ object.oidc_client_roles.count }} role{{ object.oidc_client_roles.count|pluralize }} de client</small>{% endif %}
             </td>
             <td>

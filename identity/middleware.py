@@ -1,6 +1,8 @@
 from django.http import HttpResponse
+from django.conf import settings
 from django.utils.cache import patch_vary_headers
 import base64
+import ipaddress
 import logging
 import zoneinfo
 import jwt
@@ -10,6 +12,24 @@ from django.utils import timezone, translation
 from urllib.parse import urlencode
 
 logger = logging.getLogger(__name__)
+
+class ClientIPMiddleware:
+    """Resolve o IP original somente quando a cadeia de proxies foi explicitamente confiada."""
+    def __init__(self,get_response): self.get_response=get_response
+    @staticmethod
+    def _valid(value):
+        try: return str(ipaddress.ip_address(value.strip()))
+        except (ValueError,AttributeError): return None
+    def __call__(self,request):
+        remote=self._valid(request.META.get("REMOTE_ADDR"))
+        if settings.TRUST_X_FORWARDED_FOR:
+            forwarded=[part.strip() for part in request.META.get("HTTP_X_FORWARDED_FOR","").split(",") if part.strip()]
+            chain=forwarded+([remote] if remote else [])
+            index=len(chain)-settings.TRUSTED_PROXY_COUNT-1
+            if index>=0:
+                client_ip=self._valid(chain[index])
+                if client_ip: request.META["REMOTE_ADDR"]=client_ip
+        return self.get_response(request)
 
 class UserLocaleMiddleware:
     """Ativa idioma e fuso horário da preferência do usuário; anônimos usam o padrão do sistema."""

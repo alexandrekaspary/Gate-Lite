@@ -7,6 +7,8 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o 
 
 ### Adicionado
 
+- Opção para gerar e exibir um novo client secret diretamente na edição de clients confidenciais, preservando a janela de sobreposição do secret anterior.
+- Suporte configurável ao IP original via `X-Forwarded-For` para auditoria atrás de load balancers, com seleção segura baseada na quantidade de proxies confiáveis.
 - Tela pública de cadastro (`/register/`) para que visitantes criem a própria conta, com o mesmo estilo visual das telas de login e recuperação de senha.
 - Opção **Habilitar cadastro de novos usuários** e **Grupos padrão do cadastro** na política de segurança, controlando a disponibilidade da tela e os grupos concedidos automaticamente a quem se cadastra.
 - Traduções em inglês e espanhol para a tela de cadastro e o link correspondente no login.
@@ -17,6 +19,11 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e o 
 
 ### Alterado
 
+- Criação e edição de clients agora usam o mesmo wizard simplificado. O tipo da aplicação deriva no servidor client público/confidencial, autenticação, Authorization Code, Refresh Token, Client Credentials e PKCE; os valores permanecem visíveis como automáticos.
+- A etapa Aplicação concentra identificação e 2FA; Protocolo reúne o preset e scopes; URLs trata redirects e CORS; Roles sincroniza várias entradas no formato `nome | descrição`.
+- O cadastro separado de roles foi removido. Atribuições continuam nos fluxos de grupos e usuários.
+- A página Configurações foi reorganizada em Contas, Segurança e OIDC/Governança, seguindo a ordem operacional recomendada.
+- Toda a documentação do console e o README foram reescritos para refletir o fluxo atual.
 - Após o login, a navegação direta no GateLite (console, `/admin/`, sessão expirada etc.) sempre pousa em Minha conta, mesmo que uma página tenha pedido para voltar a outro lugar via `next`. Um fluxo OIDC interrompido pelo login (aplicações terceiras autenticando via GateLite) continua sendo retomado normalmente — o SSO não é afetado.
 - Confirmar um e-mail não derruba mais sessões: antes, a confirmação revogava todas as sessões web, sessões OIDC e refresh tokens do usuário (o mesmo tratamento de troca de senha) e sempre redirecionava para o login, mesmo que o usuário já estivesse autenticado. Agora só atualiza o endereço confirmado e mostra a tela de confirmação, sem desconectar a sessão atual nem nenhuma outra.
 

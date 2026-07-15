@@ -17,6 +17,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from .forms import (
+    ClientCreateForm,
     ClientForm,
     ClientRoleForm,
     GroupForm,
@@ -290,7 +291,7 @@ class ConsoleTemplateContractTests(TestCase):
         self.client.force_login(self.admin)
 
     def test_all_console_lists_render_common_navigation_filters_and_tables(self):
-        for kind in ("users", "groups", "clients", "roles", "permissions"):
+        for kind in ("users", "groups", "clients", "permissions"):
             with self.subTest(kind=kind):
                 response = self.client.get(reverse("console:list", args=[kind]))
                 self.assertEqual(response.status_code, 200)
@@ -312,8 +313,7 @@ class ConsoleTemplateContractTests(TestCase):
         expected_fields = {
             "users": ("username", "groups", "client_roles"),
             "groups": ("name", "users", "client_roles", "permissions"),
-            "clients": ("client_id", "client_type", "require_mfa", "redirect_uris"),
-            "roles": ("client", "name", "groups", "users", "composites"),
+            "clients": ("client_id", "application_type", "require_mfa", "redirect_uris"),
             "permissions": ("name", "codename", "content_type"),
         }
         for kind, required_names in expected_fields.items():
@@ -341,6 +341,27 @@ class ConsoleTemplateContractTests(TestCase):
             html=True,
         )
 
+    def test_client_create_and_edit_use_the_same_wizard_and_visible_fields(self):
+        oidc_client = OIDCClient.objects.create(name="Mesmo fluxo", client_id="same-flow")
+        ClientRole.objects.create(client=oidc_client, name="reader", description="Consulta")
+        create = self.client.get(reverse("console:create", args=["clients"]))
+        edit = self.client.get(reverse("console:edit", args=["clients", oidc_client.pk]))
+        self.assertContains(create, 'data-kind="clients-create"')
+        self.assertContains(edit, 'data-kind="clients-create"')
+        create_fields = {field.name for field in create.context["form"].visible_fields()}
+        edit_fields = {field.name for field in edit.context["form"].visible_fields()}
+        self.assertEqual(edit_fields, create_fields | {"rotate_secret"})
+        self.assertContains(edit, "Gerar novo client secret")
+
+    def test_generated_client_secret_card_has_an_explicit_close_control(self):
+        session = self.client.session
+        session["new_client_secret"] = "temporary-client-secret"
+        session.save()
+        response = self.client.get(reverse("console:list", args=["clients"]))
+        self.assertContains(response, 'data-dismiss-secret')
+        self.assertContains(response, 'aria-label="Fechar e ocultar client secret"')
+        self.assertContains(response, "temporary-client-secret")
+
     def test_bound_client_errors_are_visible_in_the_wizard(self):
         response = self.client.post(
             reverse("console:create", args=["clients"]),
@@ -358,6 +379,7 @@ class ConsoleTemplateContractTests(TestCase):
                 "post_logout_redirect_uris": "",
                 "allowed_origins": "",
                 "scopes": "openid profile",
+                "role_definitions": "user | Acesso inicial",
             },
         )
 
@@ -381,14 +403,10 @@ class ConsoleTemplateContractTests(TestCase):
 
         first_client = OIDCClient.objects.create(name="API A", client_id="api-a")
         second_client = OIDCClient.objects.create(name="API B", client_id="api-b")
-        expected_role = ClientRole.objects.create(client=first_client, name="reader")
+        ClientRole.objects.create(client=first_client, name="reader")
         ClientRole.objects.create(client=second_client, name="reader")
-        roles = self.client.get(
-            reverse("console:list", args=["roles"]),
-            {"q": "reader", "client": first_client.pk},
-        )
-        self.assertEqual(list(roles.context["objects"]), [expected_role])
-        self.assertContains(roles, f'value="{first_client.pk}" selected')
+        roles = self.client.get(reverse("console:list", args=["roles"]))
+        self.assertRedirects(roles, reverse("console:list", args=["clients"]))
 
         Group.objects.bulk_create([Group(name=f"page-group-{index:02}") for index in range(26)])
         second_page = self.client.get(
@@ -617,6 +635,18 @@ class PolicyAndRouteContractTests(TestCase):
         self.assertEqual(self.client.get(reverse("console:settings")).status_code, 200)
         denied = self.client.post(reverse("console:settings"), {})
         self.assertEqual(denied.status_code, 403)
+
+    def test_settings_navigation_follows_the_operational_sequence(self):
+        admin = User.objects.create_superuser("settings-order", password=PASSWORD)
+        self.client.force_login(admin)
+        html = self.client.get(reverse("console:settings")).content.decode()
+        anchors = (
+            'href="#registration"', 'href="#localization"', 'href="#email"',
+            'href="#password"', 'href="#lockout"', 'href="#mfa"',
+            'href="#tokens"', 'href="#audit-retention"', 'href="#access"',
+        )
+        positions = [html.index(anchor) for anchor in anchors]
+        self.assertEqual(positions, sorted(positions))
 
     def test_password_policy_is_applied_by_the_user_creation_form(self):
         policy = SecurityPolicy.load()

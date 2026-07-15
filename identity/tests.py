@@ -3,6 +3,7 @@ import hashlib
 from urllib.parse import parse_qs, unquote, urlparse
 
 import jwt
+from django import forms
 from django.contrib.auth.hashers import check_password
 from django.contrib.auth.models import Group, Permission, User
 from django.test import TestCase, override_settings
@@ -10,7 +11,7 @@ from django.utils import timezone
 from unittest.mock import patch
 
 from .crypto import decrypt_value, private_pem
-from .forms import ClientForm, ClientRoleForm, GroupForm
+from .forms import ClientCreateForm, ClientEditForm, ClientForm, ClientRoleForm, GroupForm
 from .mfa import (
     hash_recovery_codes,
     matching_counter,
@@ -509,18 +510,11 @@ class RoleAndAudienceTests(OIDCTestCase):
 
 
 class RoleManagementFormTests(OIDCTestCase):
-    def test_group_and_role_forms_manage_users_groups_and_service_accounts(self):
+    def test_group_form_manages_memberships_and_role_form_only_defines_role(self):
         user = User.objects.create_user("member")
         group = Group.objects.create(name="operators")
         api_one = self.make_client("api-one", redirects=())
         api_two = self.make_client("api-two", redirects=())
-        service = self.make_client(
-            "service-account",
-            application_type=OIDCClient.ApplicationType.SERVICE,
-            redirects=(),
-            authorization_code_enabled=False,
-            client_credentials_enabled=True,
-        )
         role_one = ClientRole.objects.create(client=api_one, name="read")
         role_two = ClientRole.objects.create(client=api_two, name="write")
 
@@ -538,23 +532,17 @@ class RoleManagementFormTests(OIDCTestCase):
         self.assertEqual(list(group.user_set.all()), [user])
         self.assertEqual(set(group.oidc_client_roles.all()), {role_one, role_two})
 
-        direct_user = User.objects.create_user("direct")
-        direct_group = Group.objects.create(name="direct-group")
         role_form = ClientRoleForm(
             {
                 "client": api_one.pk,
                 "name": "admin",
                 "description": "Full API access",
-                "users": [direct_user.pk],
-                "groups": [direct_group.pk],
-                "service_clients": [service.pk],
             }
         )
         self.assertTrue(role_form.is_valid(), role_form.errors)
         role = role_form.save()
-        self.assertEqual(list(role.users.all()), [direct_user])
-        self.assertEqual(list(role.groups.all()), [direct_group])
-        self.assertEqual(list(role.service_clients.all()), [service])
+        self.assertEqual(set(role_form.fields), {"client", "name", "description"})
+        self.assertEqual(role.description, "Full API access")
 
 
 class TokenLifecycleTests(OIDCTestCase):
@@ -737,6 +725,7 @@ class CORSAndURIValidationTests(OIDCTestCase):
             "allowed_audiences": [],
             "allowed_groups": [],
             "allowed_users": [],
+            "role_definitions": "reader | Consulta dados\neditor | Altera dados",
         }
         data.update(overrides)
         return data
@@ -766,6 +755,60 @@ class CORSAndURIValidationTests(OIDCTestCase):
         self.assertEqual(
             set(client.scope_names()),
             {"openid", "profile", "email", "custom.scope"},
+        )
+
+    def test_client_create_form_derives_recommended_protocol_from_application_type(self):
+        technical_fields = {
+            "client_type", "token_endpoint_auth_method", "authorization_code_enabled",
+            "refresh_token_enabled", "client_credentials_enabled", "require_pkce",
+        }
+        for application_type, expected in (
+            (OIDCClient.ApplicationType.SPA, (OIDCClient.ClientType.PUBLIC, OIDCClient.AuthMethod.NONE, True, True, False, True)),
+            (OIDCClient.ApplicationType.SERVICE, (OIDCClient.ClientType.CONFIDENTIAL, OIDCClient.AuthMethod.BASIC, False, False, True, False)),
+            (OIDCClient.ApplicationType.RESOURCE, (OIDCClient.ClientType.CONFIDENTIAL, OIDCClient.AuthMethod.BASIC, False, False, False, False)),
+        ):
+            with self.subTest(application_type=application_type):
+                data = self.client_form_data(
+                    client_id=f"preset-{application_type}",
+                    application_type=application_type,
+                    redirect_uris="" if application_type in {OIDCClient.ApplicationType.SERVICE, OIDCClient.ApplicationType.RESOURCE} else "https://app.example/callback",
+                )
+                form = ClientCreateForm(data)
+                self.assertTrue(all(form.fields[name].disabled for name in technical_fields))
+                self.assertTrue(form.is_valid(), form.errors)
+                client = form.save()
+                self.assertEqual(
+                    (client.client_type, client.token_endpoint_auth_method, client.authorization_code_enabled, client.refresh_token_enabled, client.client_credentials_enabled, client.require_pkce),
+                    expected,
+                )
+                self.assertEqual(set(client.origin_list()), {"https://app.example", "http://localhost:5173"})
+                self.assertEqual(list(client.roles.values_list("name", flat=True)), ["editor", "reader"])
+
+    def test_client_edit_form_uses_same_presets_and_synchronizes_roles(self):
+        client = self.make_client("editable-client", origins=("https://old.example",))
+        ClientRole.objects.create(client=client, name="old", description="Role antiga")
+        form = ClientEditForm(
+            self.client_form_data(
+                name="Serviço editado",
+                client_id=client.client_id,
+                application_type=OIDCClient.ApplicationType.SERVICE,
+                redirect_uris="",
+                allowed_origins="https://worker.example",
+                scopes="api.read",
+                role_definitions="reader | Consulta dados\nwriter | Altera dados",
+            ),
+            instance=client,
+        )
+        self.assertTrue(form.is_valid(), form.errors)
+        client = form.save()
+        self.assertEqual(client.client_type, OIDCClient.ClientType.CONFIDENTIAL)
+        self.assertFalse(client.authorization_code_enabled)
+        self.assertTrue(client.client_credentials_enabled)
+        self.assertFalse(client.require_pkce)
+        self.assertEqual(client.origin_list(), ["https://worker.example"])
+        self.assertEqual(
+            list(client.roles.values_list("name", "description")),
+            [("reader", "Consulta dados"), ("writer", "Altera dados")],
         )
 
     def test_client_form_rejects_unsafe_uris_origins_and_invalid_type_combinations(self):
@@ -889,7 +932,7 @@ class ConsoleRBACTests(TestCase):
         client_manager.user_permissions.add(self.permission("manage_clients"))
         self.client.force_login(client_manager)
         self.assertEqual(self.client.get("/console/clients/").status_code, 200)
-        self.assertEqual(self.client.get("/console/roles/?q=read").status_code, 200)
+        self.assertRedirects(self.client.get("/console/roles/?q=read"), "/console/clients/")
         self.assertEqual(self.client.get("/console/users/").status_code, 403)
         self.assertEqual(self.client.get("/console/settings/").status_code, 403)
 
@@ -902,13 +945,13 @@ class ConsoleRBACTests(TestCase):
             "/console/users/",
             "/console/groups/",
             "/console/clients/",
-            "/console/roles/",
             "/console/permissions/",
             "/console/settings/",
             "/console/keys/",
         ):
             with self.subTest(url=url):
                 self.assertEqual(self.client.get(url).status_code, 200)
+        self.assertRedirects(self.client.get("/console/roles/"), "/console/clients/")
 
     def test_console_creates_public_and_confidential_clients_with_correct_credentials(self):
         admin = User.objects.create_superuser(
@@ -928,6 +971,7 @@ class ConsoleRBACTests(TestCase):
             "allowed_groups": [],
             "allowed_users": [],
             "generate_secret": "on",
+            "role_definitions": "user | Acesso inicial",
         }
 
         confidential_response = self.client.post(
@@ -965,6 +1009,34 @@ class ConsoleRBACTests(TestCase):
         self.assertTrue(public.require_pkce)
         self.assertFalse(public.client_credentials_enabled)
         self.assertFalse(public.secrets.exists())
+
+    def test_console_rotates_confidential_client_secret_from_the_edit_flow(self):
+        admin = User.objects.create_superuser("rotator", password="Rotator-password-1")
+        self.client.force_login(admin)
+        oidc_client = OIDCClient.objects.create(name="Rotate Client", client_id="rotate-client")
+        ClientRole.objects.create(client=oidc_client, name="reader", description="Consulta")
+        old_secret = "old-secret-for-rotation"
+        oidc_client.set_secret(old_secret)
+        response = self.client.post(
+            f"/console/clients/{oidc_client.pk}/",
+            {
+                "name": oidc_client.name,
+                "client_id": oidc_client.client_id,
+                "application_type": OIDCClient.ApplicationType.WEB,
+                "is_active": "on",
+                "redirect_uris": "https://rotate.example/callback",
+                "post_logout_redirect_uris": "",
+                "allowed_origins": "https://rotate.example",
+                "scopes": "openid profile offline_access",
+                "role_definitions": "reader | Consulta",
+                "rotate_secret": "on",
+            },
+        )
+        new_secret = self.client.session["new_client_secret"]
+        self.assertRedirects(response, "/console/clients/", fetch_redirect_response=False)
+        self.assertNotEqual(new_secret, old_secret)
+        self.assertTrue(oidc_client.check_secret(old_secret))
+        self.assertTrue(oidc_client.check_secret(new_secret))
 
 
 class JWTAndDiscoveryTests(OIDCTestCase):
